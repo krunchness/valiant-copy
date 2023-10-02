@@ -3,6 +3,7 @@ import { View, StyleSheet, DrawerLayoutAndroid, Image, Text, Button, TouchableOp
 import { Provider as PaperProvider } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createStackNavigator } from '@react-navigation/stack';
 import DashboardScreen from './screens/DashboardScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import InventoryListScreen from './screens/InventoryListScreen';
@@ -55,66 +56,73 @@ const styles = StyleSheet.create({
 });
 
 const Drawer = createDrawerNavigator();
+const Stack = createStackNavigator();
 
 // Function to open an external link
 const openExternalLink = (url) => {
   Linking.openURL(url);
 };
 
+
+const handleLogout = (navigation) => {
+  // Implement your logout logic here, e.g., clear user data and reset authentication status
+  navigation.navigate('Login'); // Navigate to the login screen
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Set initial authentication status
 
-  // Function to handle user login
-  const handleLogin = () => {
-    // Implement your login logic here, and set isAuthenticated to true upon successful login
-    setIsAuthenticated(true);
-  };
   
   return (
     <PaperProvider>
       <NavigationContainer>
-        {isAuthenticated ? (
-          <Drawer.Navigator 
-            drawerContent={props => <CustomDrawerContent {...props}/>} 
-            screenOptions={{ headerMode: 'none' }}
-            initialRouteName="Dashboard"
-          >
-            <Drawer.Screen name="Dashboard" component={DashboardScreen}/>
-            <Drawer.Screen 
-              name="Inventory List" 
-              component={InventoryListScreen} 
-              options={({ route }) => ({
-                title: 'All RPIE Specification Sheet'
-              })}
-            />
-            <Drawer.Screen
-              name="SingleInventory"
-              component={SingleInventoryScreen}
-              options={({ route }) => ({
-                title: route.params && route.params.post
-                  ? route.params.post.post_title + ' | ' + route.params.post.acf.rpie_index_number_code
-                  : 'Single Inventory'
-              })}
-            />
-            <Drawer.Screen
-              name="EditSingleInventory"
-              component={EditSingleInventoryScreen}
-              options={({ route }) => ({
-                title: route.params && route.params.post
-                  ? 'Edit ' + route.params.post.post_title + ' | ' + route.params.post.acf.rpie_index_number_code
-                  : 'Edit Single Inventory'
-              })}
-            />
-            <Drawer.Screen name="Profile" component={ProfileScreen} />
-            <Drawer.Screen name="QRCodeScannerScreen" component={QRCodeScannerScreen} />
-          </Drawer.Navigator>
-        ) : (
-          <LoginScreen onLogin={handleLogin} />
-        )}
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="DashboardNewScreen" component={DashboardNavigator} options={{ headerShown: false }} />
+        </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
   );
 }
+
+function DashboardNavigator() {
+  return (
+    <Drawer.Navigator 
+            drawerContent={props => <CustomDrawerContent {...props}/>} 
+            initialRouteName="Dashboard"
+          >
+      <Drawer.Screen name="Dashboard" component={DashboardScreen}/>
+      <Drawer.Screen 
+        name="Inventory List" 
+        component={InventoryListScreen} 
+        options={({ route }) => ({
+          title: 'All RPIE Specification Sheet'
+        })}
+      />
+      <Drawer.Screen
+        name="SingleInventory"
+        component={SingleInventoryScreen}
+        options={({ route }) => ({
+          title: route.params && route.params.post
+            ? route.params.post.post_title + ' | ' + route.params.post.acf.rpie_index_number_code
+            : 'Single Inventory'
+        })}
+      />
+      <Drawer.Screen
+        name="EditSingleInventory"
+        component={EditSingleInventoryScreen}
+        options={({ route }) => ({
+          title: route.params && route.params.post
+            ? 'Edit ' + route.params.post.post_title + ' | ' + route.params.post.acf.rpie_index_number_code
+            : 'Edit Single Inventory'
+        })}
+      />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="QRCodeScannerScreen" component={QRCodeScannerScreen} />
+    </Drawer.Navigator>
+  );
+}
+
 
 const CustomDrawerContent = ({ navigation }) => (
   <DrawerLayoutAndroid
@@ -128,10 +136,10 @@ const CustomDrawerContent = ({ navigation }) => (
     <View>
       {/* Logo */}
       <View style={styles.logoContainer}>
-        {/*<Image
+        <Image
           source={require('./assets/logo.png')} // Replace with the path to your logo image
           style={styles.logo}
-        />*/}
+        />
       </View>
 
       <View style={styles.menuItemsContainer}>
@@ -148,6 +156,15 @@ const CustomDrawerContent = ({ navigation }) => (
           <TouchableOpacity onPress={() => navigation.navigate('Inventory List')}>
             <View>
               <Text>Inventory List</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.menuItemsContainer}>
+        <View style={styles.menuItem}>
+          <TouchableOpacity onPress={() => handleLogout(navigation)}>
+            <View>
+              <Text>Logout</Text>
             </View>
           </TouchableOpacity>
         </View>
