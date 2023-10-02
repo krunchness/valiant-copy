@@ -3,7 +3,7 @@
     "name": "InventoryManagement",
     "slug": "InventoryManagement",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -21,10 +21,17 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["CAMERA", "RECORD_AUDIO"],
+      "package": "com.dinocode.solutions.InventoryManagement"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f93aa7fa-c55b-43d0-a274-83f5d869eafa"
+      }
     }
   }
 }
