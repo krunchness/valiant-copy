@@ -63,11 +63,12 @@ function QRCodeScannerScreen() {
     };
   }, [showScannedRPIEDialog]);
 
-  const handleBarCodeScanned = async ({ type, data }) => {
+  const handleQRCodeScanned = async ({ type, data }) => {
     if (!showScannedRPIEDialog) {
       setResponseData(null); // Reset the response data
       setShowScannedRPIEDialog(true);
 
+      console.log(data);
       const pattern = /RPIE ID:\s+(\S+)/;
       const match = data.match(pattern);
 
@@ -150,7 +151,7 @@ function QRCodeScannerScreen() {
                 ref={cameraRef}
                 style={{ flex: 1, width: '100%', height: '70%' }}
                 type={Camera.Constants.Type.back}
-                onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+                onBarCodeScanned={scanned ? undefined : handleQRCodeScanned}
               />
             )}
 

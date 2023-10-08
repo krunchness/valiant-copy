@@ -10,6 +10,7 @@ import InventoryListScreen from './screens/InventoryListScreen';
 import SingleInventoryScreen from './screens/SingleInventoryScreen';
 import EditSingleInventoryScreen from './screens/EditSingleInventoryScreen';
 import QRCodeScannerScreen from './screens/QRCodeScannerScreen';
+import BarcodeScannerScreen from './screens/BarcodeScannerScreen';
 import LoginScreen from './screens/LoginScreen';
 import * as SQLite from 'expo-sqlite';
 const styles = StyleSheet.create({
@@ -118,7 +119,16 @@ function DashboardNavigator() {
         })}
       />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
-      <Drawer.Screen name="QRCodeScannerScreen" component={QRCodeScannerScreen} />
+      <Drawer.Screen name="QRCodeScannerScreen" component={QRCodeScannerScreen} 
+        options={({ route }) => ({
+          title: 'Scan RPIE QR Code'
+        })}
+      />
+      <Drawer.Screen name="BarcodeScanner" component={BarcodeScannerScreen} 
+        options={({ route }) => ({
+          title: 'Scan RPIE Barcode'
+        })}
+      />
     </Drawer.Navigator>
   );
 }
