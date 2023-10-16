@@ -52,12 +52,15 @@ function DashboardScreen() {
           </Button>
         </View>
       </View>
-      <Button mode="contained" onPress={() => navigation.navigate('QRCodeScannerScreen')}>
-        Scan QR Code
-      </Button>
-      
-      {/* Display a message if a QR code has been scanned */}
-      {scanned && <Text>QR Code Scanned!</Text>}
+      <View style={styles.buttonContainer}>
+        <Button mode="contained" onPress={() => navigation.navigate('QRCodeScannerScreen')}>
+          Scan QR Code
+        </Button>
+
+        <Button mode="contained" onPress={() => navigation.navigate('BarcodeScanner')}>
+          Scan Barcode
+        </Button>
+      </View>
     </View>
   );
 }
@@ -81,6 +84,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  }
 });
 
 export default DashboardScreen;
