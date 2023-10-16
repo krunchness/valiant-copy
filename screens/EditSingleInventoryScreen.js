@@ -72,7 +72,7 @@ class EditSingleInventoryScreen extends React.Component {
 
     const { route } = this.props;
     const { post } = route.params;
-    console.log(post);
+    
     // Update state with the post.acf values
     this.setState({
       post: post,
@@ -116,6 +116,55 @@ class EditSingleInventoryScreen extends React.Component {
       rpie_index_number_code: post.acf.rpie_index_number_code,
       status: post.acf.status.value
     });
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    // Check if the post prop has changed
+    if (prevProps.route.params.post !== this.props.route.params.post) {
+      const { post } = this.props.route.params;
+      this.setState({
+        post: post,
+        installation: post.acf.installation,
+        facility_num_name: post.acf.facility_num_name,
+        room_num_loc: post.acf.room_num_loc,
+        system: post.acf.system,
+        subsystem: post.acf.subsystem,
+        assembly_category: post.acf.assembly_category,
+        nomenclature: post.acf.nomenclature,
+        rpie_index_number: post.acf.rpie_index_number,
+        bar_code_number: post.acf.bar_code_number,
+        prime_component: post.acf.prime_component,
+        group_name: post.acf.group_name,
+        group_risk_factor: post.acf.group_risk_factor,
+        rpie_risk_factor: post.acf.rpie_risk_factor,
+        rpie_spare: post.acf.rpie_spare,
+        capacity_unit: post.acf.capacity_unit,
+        capacity_value: post.acf.capacity_value,
+        manufacturer: post.acf.manufacturer,
+        model: post.acf.model,
+        serial_number: post.acf.serial_number,
+        catalog_number: post.acf.catalog_number,
+        life_expectancy: post.acf.life_expectancy,
+        contractor: post.acf.contractor,
+        contract_number: post.acf.contract_number,
+        contract_start_date: post.acf.contract_start_date,
+        contract_end_date: post.acf.contract_end_date,
+        po_number: post.acf.po_number,
+        vendor: post.acf.vendor,
+        installation_date: post.acf.installation_date,
+        warranty_start_date: post.acf.warranty_start_date,
+        spec_unit: post.acf.spec_unit,
+        spec_value: post.acf.spec_value,
+        spec_corrections: post.acf.spec_corrections,
+        equipment_hazard: post.acf.equipment_hazard,
+        equipment_hazard_corrections: post.acf.equipment_hazard_corrections,
+        area_supported: post.acf.area_supported,
+        note_date: post.acf.note_date,
+        note_text: post.acf.note_text,
+        rpie_index_number_code: post.acf.rpie_index_number_code,
+        status: post.acf.status.value
+      });
+    }
   }
 
   // Function to save changes
@@ -204,7 +253,7 @@ class EditSingleInventoryScreen extends React.Component {
             // You might need to include authentication headers if required
           },
         });
-        // console.error(response);
+        console.log(response.data);
         if (response.status === 200) {
           // Data successfully saved
           this.showMessageDialog();
@@ -272,6 +321,8 @@ class EditSingleInventoryScreen extends React.Component {
       status,
       post
     } = this.state;
+
+    // console.log(post);
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView keyboardShouldPersistTaps="handled">
