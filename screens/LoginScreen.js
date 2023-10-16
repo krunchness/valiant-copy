@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Image } from 'react-native';
 import { insertUser, loginUser } from '../database'; // Import database functions
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
@@ -8,22 +8,12 @@ function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState('');
   const navigation = useNavigation(); // Get navigation object
 
-  const handleRegister = () => {
-    insertUser(email, password)
-      .then((message) => {
-        alert(message);
-      })
-      .catch((error) => {
-        alert('User registration failed');
-      });
-  };
-
   const handleLogin = () => {
     loginUser(email, password)
       .then((message) => {
         alert(message);
         // Implement navigation logic here for a successful login
-        navigation.navigate('Dashboard'); // Navigate to DashboardScreen
+        navigation.navigate('DashboardNewScreen'); // Navigate to DashboardScreen
       })
       .catch((error) => {
         alert(error);
@@ -32,7 +22,11 @@ function LoginScreen({ onLogin }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login or Register</Text>
+      <Image
+          source={require('../assets/logo.png')} // Replace with the path to your logo image
+          style={styles.logo}
+      />
+      <Text style={styles.title}>Login</Text>
       <TextInput
         placeholder="Email"
         style={styles.input}
@@ -46,7 +40,6 @@ function LoginScreen({ onLogin }) {
         value={password}
         secureTextEntry
       />
-      <Button title="Register" onPress={handleRegister} />
       <Button title="Login" onPress={handleLogin} />
     </View>
   );

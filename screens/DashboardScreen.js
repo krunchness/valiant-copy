@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { Text, StyleSheet, View, Linking } from 'react-native';
+import { Text, StyleSheet, View, Linking, BackHandler } from 'react-native';
 
 function DashboardScreen() {
   const navigation = useNavigation();
+  useEffect(() => {
+    // Disable the hardware back button on Android
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
 
+    return () => {
+      // Remove the event listener when the component unmounts
+      backHandler.remove();
+    };
+  }, []);
   const openExternalLink = (url) => {
     Linking.openURL(url);
   };
@@ -34,7 +42,16 @@ function DashboardScreen() {
           </Button>
         </View>
       </View>
-
+      <View style={styles.card}>
+        <View style={styles.cardWrapper}>
+          <Text style={styles.paragraph}>Web Admin Panel</Text>
+        </View>
+        <View style={styles.cardWrapper}>
+          <Button mode="contained" onPress={() => openExternalLink("https://valiantservices.dcodeprojects.co.in/wp-admin")}>
+            Go to web Admin
+          </Button>
+        </View>
+      </View>
       <Button mode="contained" onPress={() => navigation.navigate('QRCodeScannerScreen')}>
         Scan QR Code
       </Button>
@@ -51,7 +68,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 30,
     borderRadius: 20,
-    marginBottom: 50
+    marginBottom: 10
   },
   cardWrapper: {
     paddingVertical: 20,
