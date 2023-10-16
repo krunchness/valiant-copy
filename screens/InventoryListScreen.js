@@ -16,7 +16,7 @@ class InventoryListScreen extends React.Component {
       isConnected: true,
       isRefreshing: false,
       searchQuery: '',
-      itemsPerPage: 15, // Set the number of items per page
+      itemsPerPage: 30, // Set the number of items per page
       showDeleteDialog: false,
       showMessageDialog: false,
       dialogPost: null,
@@ -77,13 +77,15 @@ class InventoryListScreen extends React.Component {
       }
     };
 
+    this.loadStoredPosts();
+
     this.db.transaction((tx) => {
       tx.executeSql(
         'DELETE FROM rpie_specification_sheet',
         [],
         () => {
           console.log('DELETED TABLE');
-          this.setState({ posts: [] });
+          // this.setState({ posts: [] });
         },
         (tx, error) => {
           console.error('Error executing SQL query:', error);
@@ -184,7 +186,7 @@ class InventoryListScreen extends React.Component {
             }
           }
 
-          console.log(allPosts);
+          this.setState({ posts: [] });
           // Now you can use allPosts to set the state or perform other operations
           this.setState({ posts: allPosts });
            this.setState({ isLoading: false });
@@ -354,6 +356,7 @@ class InventoryListScreen extends React.Component {
    
     const filteredPosts = posts.filter((post) =>
       post.post_title.toLowerCase().includes(searchQuery.toLowerCase())
+
     );
 
     const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
@@ -418,8 +421,16 @@ class InventoryListScreen extends React.Component {
 
 
                   <DataTable.Cell style={[styles.column, { width: columnWidth }]}>
-                    {post.acf.status?.value === 'none' ? (
+                    {post.acf?.status === 'none' ? (
                       <Text style={styles.cellText}></Text>
+                    ) : post.acf?.status === 'dmlss-entry-complete' ? (
+                      <Text style={styles.cellText}>DMLSS Entry Complete</Text>
+                    ) : post.acf?.status === 'inventory-complete' ? (
+                      <Text style={styles.cellText}>Inventory Complete</Text>
+                    ) : post.acf?.status === 'qc-complete' ? (
+                      <Text style={styles.cellText}>QC Complete</Text>
+                    ) : post.acf?.status === 'final-dmlss-complete' ? (
+                      <Text style={styles.cellText}>Final DMLSS Complete</Text>
                     ) : (
                       <Text style={styles.cellText}>{post.acf.status?.label}</Text>
                     )}

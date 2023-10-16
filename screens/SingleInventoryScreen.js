@@ -397,6 +397,33 @@ class SingleInventoryScreen extends React.Component {
               />
             </View>
           </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="Status"
+                value={
+                  post.acf?.status === 'none' ? '' :
+                  post.acf?.status === 'dmlss-entry-complete' ? 'DMLSS Entry Complete' :
+                  post.acf?.status === 'inventory-complete' ? 'Inventory Complete' :
+                  post.acf?.status === 'qc-complete' ? 'QC Complete' :
+                  post.acf?.status === 'final-dmlss-complete' ? 'Final DMLSS Complete' :
+                  post.acf.status?.label
+                }
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="Status Modified Date"
+                value={post.acf?.status_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     );
