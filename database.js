@@ -169,3 +169,16 @@ export function loginUser(username, password) {
     });
   });
 }
+
+export const createRpieSpecsTable = () => {
+  db.transaction((tx) => {
+    tx.executeSql(`
+      CREATE TABLE IF NOT EXISTS rpie_specifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rpie_id TEXT,
+        created_date TEXT,
+        status TEXT
+      )
+    `);
+  });
+};
