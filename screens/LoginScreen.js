@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Image } from 'react-native';
 import { insertUser, loginUser } from '../database'; // Import database functions
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation
+import { Button } from 'react-native-paper';
 
 function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -40,8 +41,11 @@ function LoginScreen({ onLogin }) {
         value={password}
         secureTextEntry
       />
-      <Button title="Login" onPress={handleLogin} />
-    </View>
+
+      <Button textColor="#fff" mode="contained" style={styles.loginBtn} onPress={handleLogin}>
+        Login
+      </Button>
+    </View> 
   );
 }
 
@@ -63,6 +67,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingLeft: 10,
   },
+  loginBtn: {
+    backgroundColor: '#372160',
+    color: 'red',
+    width: "60%"
+  }
 });
 
 export default LoginScreen;

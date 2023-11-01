@@ -114,7 +114,7 @@ class EditSingleInventoryScreen extends React.Component {
       note_date: post.acf.note_date,
       note_text: post.acf.note_text,
       rpie_index_number_code: post.acf.rpie_index_number_code,
-      status: post.acf.status.value
+      status: post.acf.status
     });
   }
 
@@ -162,7 +162,7 @@ class EditSingleInventoryScreen extends React.Component {
         note_date: post.acf.note_date,
         note_text: post.acf.note_text,
         rpie_index_number_code: post.acf.rpie_index_number_code,
-        status: post.acf.status.value
+        status: post.acf.status
       });
     }
   }
