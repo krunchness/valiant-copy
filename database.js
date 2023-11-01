@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import NetInfo from '@react-native-community/netinfo';
 
-const db = SQLite.openDatabase('rpie_specification.db');
+export const db = SQLite.openDatabase('rpie_specification.db');
 
 
 // Create the Users table or check if it exists
@@ -175,9 +175,65 @@ export const createRpieSpecsTable = () => {
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS rpie_specifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rpie_post_id INT,
         rpie_id TEXT,
         created_date TEXT,
+        modified_date TEXT,
         status TEXT
+      )
+    `);
+  });
+};
+
+export const createRpieSpecsInfoTable = () => {
+  db.transaction((tx) => {
+    tx.executeSql(`
+      CREATE TABLE IF NOT EXISTS rpie_specification_information (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rpie_specs_id INTEGER,
+        installation TEXT,
+        facility_num_name TEXT,
+        room_num_loc TEXT,
+        system TEXT,
+        subsystem TEXT,
+        assembly_category TEXT,
+        nomenclature TEXT,
+        rpie_index_number TEXT,
+        rpie_index_number_code TEXT,
+        bar_code_number TEXT,
+        prime_component TEXT,
+        group_name TEXT,
+        group_risk_factor TEXT,
+        rpie_risk_factor TEXT,
+        rpie_spare TEXT,
+        capacity_unit TEXT,
+        capacity_value TEXT,
+        manufacturer TEXT,
+        model TEXT,
+        serial_number TEXT,
+        catalog_number TEXT,
+        life_expectancy TEXT,
+        contractor TEXT,
+        contract_number TEXT,
+        contract_start_date TEXT,
+        contract_end_date TEXT,
+        po_number TEXT,
+        vendor TEXT,
+        installation_date TEXT,
+        warranty_start_date TEXT,
+        spec_unit TEXT,
+        spec_value TEXT,
+        spec_corrections TEXT,
+        equipment_hazard TEXT,
+        equipment_hazard_corrections TEXT,
+        area_supported TEXT,
+        room_supported TEXT,
+        note_date TEXT,
+        note_text TEXT,
+        status TEXT,
+        status_date TEXT,
+
+        FOREIGN KEY (rpie_specs_id) REFERENCES rpie_specifications (id)
       )
     `);
   });
