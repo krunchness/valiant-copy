@@ -7,24 +7,31 @@ import { Dialog, Portal, Paragraph } from 'react-native-paper'; // Import Dialog
 export default function BarcodeScannerScreen() {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
+  const [text, setText] = useState('Not yet scanned')
   const [showScannedRPIEDialog, setShowScannedRPIEDialog] = useState(false);
   const [responseData, setResponseData] = useState(null); // declare the responseData state
 
-  
   // Create or open your SQLite database instance
   const db = SQLite.openDatabase('rpie_specification.db');
 
-  useEffect(() => {
+  const askForCameraPermission = () => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
-    })();
+    })()
+  }
+
+  // Request Camera Permission
+  useEffect(() => {
+    askForCameraPermission();
   }, []);
 
+  // What happens when we scan the bar code
   const handleBarCodeScanned = ({ type, data }) => {
-    console.log('test scanned');
+    setScanned(true);
+
     if (data != '') {
-      // Query your SQLite database
+      setText(data);
       db.transaction((tx) => {
         tx.executeSql(
           'SELECT * FROM rpie_specification_sheet',
@@ -70,9 +77,10 @@ export default function BarcodeScannerScreen() {
           }
         );
       });
-    } else {
-      console.log('No match found');
+      console.log('Type: ' + type + '\nData: ' + data)
     }
+
+    
   };
 
   const hideScannedRPIEDialog = () => {
@@ -82,45 +90,37 @@ export default function BarcodeScannerScreen() {
   const handleConfirmScannedRPIE = () => {
     // Handle the case when the user wants to view the scanned RPIE
     // You can navigate to another screen or perform other actions as needed
+
+    console.log(responseData);
     setShowScannedRPIEDialog(false);
   };
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState === 'active') {
-        setScanned(false);
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
+  // Check permissions and return the screens
   if (hasPermission === null) {
     return (
       <View style={styles.container}>
         <Text>Requesting for camera permission</Text>
-      </View>
-    );
+      </View>)
   }
   if (hasPermission === false) {
     return (
       <View style={styles.container}>
-        <Text>No access to camera</Text>
-        <Button title={'Allow Camera Permission'} onPress={() => requestPermissionsAsync()} />
-      </View>
-    );
+        <Text style={{ margin: 10 }}>No access to camera</Text>
+        <Button title={'Allow Camera'} onPress={() => askForCameraPermission()} />
+      </View>)
   }
 
+  // Return the View
   return (
     <View style={styles.container}>
-      <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        style={styles.barcodeBox}
-      />
-      {scanned && <Button title={'Tap to Scan Again'} onPress={() => setScanned(false)} />}
-      
+      <View style={styles.barcodebox}>
+        <BarCodeScanner
+          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+          style={{ height: 600, width: 400 }} />
+      </View>
+      <Text style={styles.maintext}>{text}</Text>
+
+      {scanned && <Button title={'Scan again?'} onPress={() => setScanned(false)} color='tomato' />}
       <Portal>
         <Dialog visible={showScannedRPIEDialog} onDismiss={hideScannedRPIEDialog}>
           <Dialog.Title>Confirm Scanned RPIE</Dialog.Title>
@@ -130,8 +130,8 @@ export default function BarcodeScannerScreen() {
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={hideScannedRPIEDialog}>Cancel</Button>
-            <Button onPress={handleConfirmScannedRPIE}>View</Button>
+            <Button onPress={hideScannedRPIEDialog} title={'Cancel?'} />
+            <Button onPress={handleConfirmScannedRPIE} title={'View'}></Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -142,14 +142,21 @@ export default function BarcodeScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
+    backgroundColor: '#fff',
     alignItems: 'center',
-  },
-  barcodeBox: {
-    alignSelf: 'center',
     justifyContent: 'center',
-    flex: 1,
-    width: '100%',
   },
+  maintext: {
+    fontSize: 16,
+    margin: 20,
+  },
+  barcodebox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 300,
+    width: 300,
+    overflow: 'hidden',
+    borderRadius: 30,
+    backgroundColor: 'tomato'
+  }
 });
