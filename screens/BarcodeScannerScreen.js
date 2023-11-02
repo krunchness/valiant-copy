@@ -90,8 +90,7 @@ export default function BarcodeScannerScreen() {
   const handleConfirmScannedRPIE = () => {
     // Handle the case when the user wants to view the scanned RPIE
     // You can navigate to another screen or perform other actions as needed
-
-    console.log(responseData);
+    navigation.navigate('SingleInventory', { post: responseData });
     setShowScannedRPIEDialog(false);
   };
 
