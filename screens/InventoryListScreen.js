@@ -7,24 +7,54 @@ const InventoryListScreen = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/?per_page=2000&page=1');
-        const items = JSON.parse(response.data);
+  const fetchData = async (page = 1, perPage = 2000) => {
+    try {
+      setLoading(true);
 
-        // setData(items);
-        await saveDataToDatabase(items);
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
+      const wordpressApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/?per_page=${perPage}&page=${page}`;
+      const response = await axios.get(wordpressApiUrl);
+      const items = response.data;
+
+      return items; 
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    }
+  };
+
+  const fetchAllPages = async () => {
+    let currentPage = 1;
+    let allPosts = [];
+
+    try {
+      while (true) {
+        const postsData = await fetchData(currentPage);
+
+        console.log(postsData.length);
+        if (postsData.length === 2) {
+          // No more pages, break the loop
+          break;
+        }else{
+          // Store the data in the database
+          await saveDataToDatabase(JSON.parse(postsData));
+
+          currentPage++;
+        }
+
       }
-    };
+
+      setLoading(false);
+      // Load data from the database and update the UI
+      await fetchDataFromDatabase();
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  };
+
+  useEffect(() => {
 
     createRpieSpecsTable();
     createRpieSpecsInfoTable();
-    fetchData();
+    fetchAllPages();
     
   }, []);
 
@@ -45,7 +75,7 @@ const InventoryListScreen = () => {
                   (_, { insertId }) => {
                     // Insert data into rpie_specification_information table
                     tx.executeSql(
-                      'INSERT INTO rpie_specification_information (rpie_specs_id, installation, facility_num_name, room_num_loc, system, subsystem, assembly_category, nomenclature, rpie_index_number, rpie_index_number_code, bar_code_number, prime_component, group_name, group_risk_factor, rpie_risk_factor, rpie_spare, capacity_unit, capacity_value, manufacturer, model, serial_number, catalog_number, life_expectancy, contractor, contract_number, contract_start_date, contract_end_date, po_number, vendor, installation_date, warranty_start_date, spec_unit, spec_value, spec_corrections, equipment_hazard, equipment_hazard_corrections, area_supported, room_supported, note_date, note_text, status, status_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                      'INSERT INTO rpie_specification_information (rpie_specs_id, installation, facility_num_name, room_num_loc, system, subsystem, assembly_category, nomenclature, rpie_index_number, rpie_index_number_code, bar_code_number, prime_component, group_name, group_risk_factor, rpie_risk_factor, rpie_spare, capacity_unit, capacity_value, manufacturer, model, serial_number, catalog_number, life_expectancy, contractor, contract_number, contract_start_date, contract_end_date, po_number, vendor, installation_date, warranty_start_date, spec_unit, spec_value, spec_corrections, equipment_hazard, equipment_hazard_corrections, area_supported, room_supported, note_date, note_text, status, status_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                       [
                         insertId, 
                         item.acf.installation ? item.acf.installation : '', 
@@ -173,7 +203,7 @@ const InventoryListScreen = () => {
           [],
           (_, { rows }) => {
             console.log(rows.length);
-            console.log('test');
+            console.log('new');
             for (let i = 0; i < rows.length; i++) {
               
               results.push(rows.item(i));
