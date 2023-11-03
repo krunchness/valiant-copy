@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator  } from 'react-native';
+import { DataTable, Button } from 'react-native-paper';
 import axios from 'axios';
 import { db, createRpieSpecsTable, createRpieSpecsInfoTable } from '../database';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const InventoryListScreen = () => {
+  const navigation = useNavigation();
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timer, setTimer] = useState(null);
+
+  const itemsPerPage = 10;
 
   const fetchData = async (page = 1, perPage = 2000) => {
     try {
@@ -38,6 +48,7 @@ const InventoryListScreen = () => {
           await saveDataToDatabase(JSON.parse(postsData));
 
           currentPage++;
+
         }
 
       }
@@ -54,9 +65,24 @@ const InventoryListScreen = () => {
 
     createRpieSpecsTable();
     createRpieSpecsInfoTable();
-    fetchAllPages();
+    // fetchAllPages();
+
+    fetchDataFromDatabase();
     
   }, []);
+
+  useEffect(() => {
+    if (timer) {
+      clearTimeout(timer); // Clear the timer if it exists
+    }
+    setTimer(setTimeout(() => fetchDataFromDatabase(searchQuery), 500)); // Set a new timer with a delay of 500ms
+    return () => clearTimeout(timer); // Clear the timer when the component unmounts
+  }, [searchQuery, page]); // Add `page` as a dependency
+
+  useEffect(() => {
+    setData([]); // Clear the data state before fetching new data
+    fetchDataFromDatabase(searchQuery);
+  }, [page]);
 
   const saveDataToDatabase = async (items) => {
     return new Promise((resolve, reject) => {
@@ -67,11 +93,12 @@ const InventoryListScreen = () => {
             'SELECT * FROM rpie_specifications WHERE rpie_id = ?',
             [item.post_title],
             (_, { rows }) => {
+            
               if (rows.length === 0) {
                 // Record with the same rpie_id does not exist, insert a new record
                 tx.executeSql(
-                  'INSERT INTO rpie_specifications (rpie_post_id, rpie_id, created_date, modified_date, status) VALUES (?, ?, ?, ?, ?)',
-                  [item.ID, item.post_title, item.post_date, item.post_modified, 'complete'],
+                  'INSERT INTO rpie_specifications (rpie_post_id, rpie_id, created_date, modified_date, newly_created, sync_status, status) VALUES (?, ?, ?, ?, ?, ? , ?)',
+                  [item.ID, item.post_title, item.post_date, item.post_modified, 'false', 'synced', item.acf.status ? item.acf.status : ''],
                   (_, { insertId }) => {
                     // Insert data into rpie_specification_information table
                     tx.executeSql(
@@ -129,8 +156,8 @@ const InventoryListScreen = () => {
                 const existingSpecId = rows.item(0).id;
 
                 tx.executeSql(
-                  'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, status = ? WHERE rpie_id = ?',
-                  [item.ID, item.post_date, item.post_modified, 'complete', item.post_title]
+                  'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE rpie_id = ?',
+                  [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status ? item.acf.status : '', item.post_title]
                 );
 
                 tx.executeSql(
@@ -193,49 +220,106 @@ const InventoryListScreen = () => {
     });
   };
 
-  const fetchDataFromDatabase = async () => {
+  const fetchDataFromDatabase = async (query) => {
     try {
       const results = [];
+      const offset = page * itemsPerPage;
 
       await db.transaction((tx) => {
         tx.executeSql(
-          'SELECT * FROM rpie_specifications',
-          [],
+          'SELECT COUNT(*) FROM rpie_specifications WHERE rpie_id LIKE ?',
+          [query ? `%${query}%` : '%'],
           (_, { rows }) => {
-            console.log(rows.length);
-            console.log('new');
+            const totalRows = rows.item(0)['COUNT(*)'];
+            console.log(totalRows);
+            setTotalPages(Math.ceil(totalRows / itemsPerPage));
+          },
+          (error) => console.error('Error counting rows from database:', error)
+        );
+
+        tx.executeSql(
+          'SELECT * FROM rpie_specifications WHERE rpie_id LIKE ? LIMIT ? OFFSET ?',
+          [query ? `%${query}%` : '%', itemsPerPage, offset],
+          (_, { rows }) => {
             for (let i = 0; i < rows.length; i++) {
-              
               results.push(rows.item(i));
             }
+
+            setLoading(false);
+            setData(results);
+
           },
           (error) => console.error('Error fetching data from database:', error)
         );
       });
-      setData(results);
+
     } catch (error) {
       console.error('Failed to fetch data from database:', error);
     }
   };
 
+  const handleSearchQueryChange = (query) => {
+    setSearchQuery(query);
+    setPage(0);
+    setData([]); // Clear the data state before fetching new data
+    // fetchDataFromDatabase(query);
+  };
+
+  const handleRowPress = (rpie) => {
+    navigation.navigate('SingleInventory', { rpie });
+  };
+
   if (loading) {
-    return <View><Text>Loading...</Text></View>;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 20 }}>Syncing...</Text>
+      </View>
+    );
   }
 
   return (
-    <FlatList
-      data={data}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <View>
-          <Text>ID: {item.id}</Text>
-          <Text>RPIE ID: {item.rpie_id}</Text>
-          <Text>Created Date: {item.created_date}</Text>
-          <Text>Status: {item.status}</Text>
-        </View>
-      )}
-    />
+    <View style={styles.container}>
+      <TextInput
+        placeholder="Search by RPIE ID"
+        value={searchQuery}
+        onChangeText={handleSearchQueryChange}
+      />
+      <DataTable>
+        <DataTable.Header>
+          <DataTable.Title>RPIE ID</DataTable.Title>
+          <DataTable.Title>Created By</DataTable.Title>
+        </DataTable.Header>
+
+        {data.map((rpie) => (
+          <TouchableOpacity key={rpie.id} onPress={() => handleRowPress(rpie)}>
+            <DataTable.Row>
+              <DataTable.Cell>{rpie.rpie_id}</DataTable.Cell>
+              <DataTable.Cell>{rpie.created_date}</DataTable.Cell>
+            </DataTable.Row>
+          </TouchableOpacity>
+        ))}
+
+        <DataTable.Pagination
+          page={page}
+          numberOfPages={totalPages}
+          onPageChange={(newPage) => setPage(newPage)}
+          label={`${page + 1} of ${totalPages}`}
+        />
+      </DataTable>
+
+      <Button style={{ backgroundColor: "#372160", width: '50%' }} textColor="#fff" onPress={() => fetchAllPages()}
+      > Sync Data </Button>
+    </View>
   );
 };
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+  },
+});
 
 export default InventoryListScreen;

@@ -179,6 +179,8 @@ export const createRpieSpecsTable = () => {
         rpie_id TEXT,
         created_date TEXT,
         modified_date TEXT,
+        newly_created TEXT,
+        sync_status TEXT,
         status TEXT
       )
     `);

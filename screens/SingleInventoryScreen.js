@@ -1,60 +1,86 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, BackHandler } from 'react-native';
-import { TextInput } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, BackHandler  } from 'react-native';
+import { TextInput, Button, Dialog, Portal, Paragraph } from 'react-native-paper';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { db } from '../database';
 
-class SingleInventoryScreen extends React.Component {
-  componentDidUpdate(prevProps) {
-    // Check if the 'isFocused' prop has changed
+const SingleInventoryScreen = ({ route, navigation }) => {
+  const { rpie } = route.params;
+  const [data, setData] = useState(null);
 
-    if (this.props.isFocused !== prevProps.isFocused) {
-      if (this.props.isFocused) {
-        // Screen is focused, reset scanned state or perform any other actions
-        // For example, you can setScanned(false) here if 'setScanned' is available in your component.
-        // Alternatively, you can perform any other side effect you need.
+  useEffect(() => {
+    // Set the title of the screen based on the categoryName parameter
+    navigation.setOptions({
+      title: rpie.rpie_id,
+    });
+  }, [rpie, navigation]);
 
-        BackHandler.removeEventListener('hardwareBackPress', this.handleBackPress);
+  useEffect(() => {
+
+    const fetchData = async (rpie) => {
+      try {
+        await db.transaction((tx) => {
+
+          tx.executeSql(
+            'SELECT * FROM rpie_specifications WHERE id = ?',
+            [rpie.id],
+            (_, { rows }) => {
+              let results = rows.item(0);
+
+              tx.executeSql(
+                'SELECT * FROM rpie_specification_information WHERE rpie_specs_id = ?',
+                [results.id],
+                (_, { rows }) => {
+
+                  results.specificationInformation = rows.item(0);
+                  setData(results);
+                },
+                (error) => console.error('Error fetching data from rpie_specification_information:', error)
+              );
+            },
+            (error) => console.error('Error fetching data from rpie_specifications:', error)
+          );
+        });
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
       }
-    }
+    };
+
+    fetchData(rpie);
+  }, [rpie]);
+
+  if (!data) {
+    return <View><Text>Loading...</Text></View>;
   }
 
-  componentDidMount() {
-    console.log('test');
-    BackHandler.addEventListener('hardwareBackPress', this.handleBackPress);
-  }
-
-  componentWillUnmount() {
-    console.log('unmount');
-    BackHandler.removeEventListener('hardwareBackPress', this.handleBackPress);
-  }
-
-  handleBackPress = () => {
-    // const { navigation } = this.props;
-    // navigation.navigate('Inventory List');
-    return true; // Return true to indicate that the back action has been handled
-  };
-
-
-  render() {
-    const { route } = this.props;
-    const { post } = route.params;
-
-    return (
-      <SafeAreaView style={styles.container}>
+  return (
+    <SafeAreaView style={styles.container}>
         <ScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
+                label="rpie_index_number"
+                value={data.specificationInformation.rpie_index_number}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="rpie_index_number_code"
+                value={data.specificationInformation.rpie_index_number_code}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
                 label="Installation"
-                value={post.acf.installation}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Facility # - Name"
-                value={post.acf.facility_num_name}
+                value={data.specificationInformation.installation}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -63,16 +89,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Room # - Other Loc"
-                value={post.acf.room_num_loc}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="System"
-                value={post.acf.system}
+                label="area_supported"
+                value={data.specificationInformation.area_supported}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -81,16 +99,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Subsystem"
-                value={post.acf.subsystem}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Assembly Category"
-                value={post.acf.subsystem}
+                label="assembly_category"
+                value={data.specificationInformation.assembly_category}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -99,16 +109,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Nomenclature"
-                value={post.acf.nomenclature}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Index #"
-                value={post.acf.rpie_index_number}
+                label="bar_code_number"
+                value={data.specificationInformation.bar_code_number}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -117,244 +119,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="RPIE Index # Code"
-                value={post.acf.rpie_index_number_code}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Bar Code #"
-                value={post.acf.bar_code_number}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Prime Component"
-                value={post.acf.prime_component}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Group Name"
-                value={post.acf.group_name}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Group Risk Factor"
-                value={post.acf.group_risk_factor}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Risk Factor"
-                value={post.acf.rpie_risk_factor}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Spare"
-                value={post.acf.rpie_spare}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Capacity Unit"
-                value={post.acf.capacity_unit}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Capacity Value"
-                value={post.acf.capacity_value}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Manufacturer"
-                value={post.acf.manufacturer}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Model"
-                value={post.acf.model}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Serial #"
-                value={post.acf.serial_number}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Catalog #"
-                value={post.acf.catalog_number}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Life Expectancy"
-                value={post.acf.life_expectancy}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Contractor"
-                value={post.acf.contractor}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Contract #"
-                value={post.acf.contract_number}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Contract Start Date"
-                value={post.acf.contract_start_date}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Contract End Date"
-                value={post.acf.contract_end_date}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="PO Number"
-                value={post.acf.po_number}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Vendor"
-                value={post.acf.vendor}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Installation Date"
-                value={post.acf.installation_date}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Warranty Start Date"
-                value={post.acf.warranty_start_date}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Spec Unit"
-                value={post.acf.spec_unit}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Spec Value"
-                value={post.acf.spec_value}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Corrections"
-                value={post.acf.spec_corrections}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Equipment Hazard"
-                value={post.acf.equipment_hazard}
+                label="capacity_unit"
+                value={data.specificationInformation.capacity_unit}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -363,35 +129,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Area Supported"
-                value={post.acf.area_supported}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Equipment Hazard Corrections"
-                value={post.acf.equipment_hazard_corrections}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Note Date"
-                value={post.acf.note_date}
-                editable = {false}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Note Text"
-                value={post.acf.note_text}
+                label="capacity_value"
+                value={data.specificationInformation.capacity_value}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -400,15 +139,8 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Status"
-                value={
-                  post.acf?.status === 'none' ? '' :
-                  post.acf?.status === 'dmlss-entry-complete' ? 'DMLSS Entry Complete' :
-                  post.acf?.status === 'inventory-complete' ? 'Inventory Complete' :
-                  post.acf?.status === 'qc-complete' ? 'QC Complete' :
-                  post.acf?.status === 'final-dmlss-complete' ? 'Final DMLSS Complete' :
-                  post.acf.status?.label
-                }
+                label="catalog_number"
+                value={data.specificationInformation.catalog_number}
                 editable = {false}
                 style={styles.disabled_text}
               />
@@ -417,18 +149,356 @@ class SingleInventoryScreen extends React.Component {
           <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
-                label="Status Modified Date"
-                value={post.acf?.status_date}
+                label="contract_end_date"
+                value={data.specificationInformation.contract_end_date}
                 editable = {false}
                 style={styles.disabled_text}
               />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="contract_number"
+                value={data.specificationInformation.contract_number}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="contract_start_date"
+                value={data.specificationInformation.contract_start_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="contractor"
+                value={data.specificationInformation.contractor}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="equipment_hazard"
+                value={data.specificationInformation.equipment_hazard}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="equipment_hazard_corrections"
+                value={data.specificationInformation.equipment_hazard_corrections}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="facility_num_name"
+                value={data.specificationInformation.facility_num_name}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="group_name"
+                value={data.specificationInformation.group_name}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="group_risk_factor"
+                value={data.specificationInformation.group_risk_factor}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="installation"
+                value={data.specificationInformation.installation}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="installation_date"
+                value={data.specificationInformation.installation_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="life_expectancy"
+                value={data.specificationInformation.life_expectancy}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="manufacturer"
+                value={data.specificationInformation.manufacturer}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="model"
+                value={data.specificationInformation.model}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="nomenclature"
+                value={data.specificationInformation.nomenclature}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="note_date"
+                value={data.specificationInformation.note_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="note_text"
+                value={data.specificationInformation.note_text}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="po_number"
+                value={data.specificationInformation.po_number}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="prime_component"
+                value={data.specificationInformation.prime_component}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="room_num_loc"
+                value={data.specificationInformation.room_num_loc}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="room_supported"
+                value={data.specificationInformation.room_supported}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="rpie_risk_factor"
+                value={data.specificationInformation.rpie_risk_factor}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="rpie_spare"
+                value={data.specificationInformation.rpie_spare}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="serial_number"
+                value={data.specificationInformation.serial_number}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="spec_corrections"
+                value={data.specificationInformation.spec_corrections}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="spec_unit"
+                value={data.specificationInformation.spec_unit}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="spec_value"
+                value={data.specificationInformation.spec_value}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="status"
+                value={data.specificationInformation.status}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="status_date"
+                value={data.specificationInformation.status_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="subsystem"
+                value={data.specificationInformation.subsystem}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="system"
+                value={data.specificationInformation.system}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="vendor"
+                value={data.specificationInformation.vendor}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="warranty_start_date"
+                value={data.specificationInformation.warranty_start_date}
+                editable = {false}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.Btnrow}>
+            <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} >
+                Edit RPIE
+              </Button>
+            </View>
+            <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} >
+                Duplicate
+              </Button>
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} >
+                Delete
+              </Button>
             </View>
           </View>
         </ScrollView>
       </SafeAreaView>
-    );
-  }
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -439,14 +509,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
   },
+  Btnrow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    marginTop: 30
+  },
   column: {
     flex: 1,
     marginRight: 8,
   },
   disabled_text: {
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#fff",
     color: "blue"
-  }
+  },
+  dropdown: {
+    backgroundColor: "#EDE4FF",
+    height: 50, // Set the height as needed
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+  },
+  Btn: {
+    backgroundColor: '#372160',
+    marginBottom: 10
+  },
+  buttonContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
 });
+
 
 export default SingleInventoryScreen;

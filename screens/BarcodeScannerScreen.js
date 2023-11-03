@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, Button, AppState } from 'react-native';
+import { Text, View, StyleSheet, AppState } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import * as SQLite from 'expo-sqlite';
-import { Dialog, Portal, Paragraph } from 'react-native-paper'; // Import Dialog and other components from react-native-paper
+import { Dialog, Portal, Paragraph, Button } from 'react-native-paper'; // Import Dialog and other components from react-native-paper
 
 export default function BarcodeScannerScreen() {
   const [hasPermission, setHasPermission] = useState(null);
@@ -119,7 +119,8 @@ export default function BarcodeScannerScreen() {
       </View>
       <Text style={styles.maintext}>{text}</Text>
 
-      {scanned && <Button title={'Scan again?'} onPress={() => setScanned(false)} color='tomato' />}
+      {scanned && <Button style={{ backgroundColor: "#372160" }}  textColor="#fff" onPress={() => setScanned(false)}
+      > Scan again? </Button> }
       <Portal>
         <Dialog visible={showScannedRPIEDialog} onDismiss={hideScannedRPIEDialog}>
           <Dialog.Title>Confirm Scanned RPIE</Dialog.Title>
