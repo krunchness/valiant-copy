@@ -66,51 +66,43 @@ function QRCodeScannerScreen() {
   const handleQRCodeScanned = async ({ type, data }) => {
     if (!showScannedRPIEDialog) {
       setResponseData(null); // Reset the response data
-      setShowScannedRPIEDialog(true);
-
-      console.log(data);
+      // setShowScannedRPIEDialog(true);
+      
       const pattern = /RPIE ID:\s+(\S+)/;
       const match = data.match(pattern);
 
       if (match) {
         const extractedValue = match[1];
+        console.log(extractedValue);
         // Query your SQLite database
         db.transaction((tx) => {
           tx.executeSql(
-            'SELECT * FROM rpie_specification_sheet',
-            [],
+            'SELECT * FROM rpie_specifications WHERE rpie_id = ?',
+            [data],
             (_, { rows }) => {
               if (rows.length > 0) {
                 
                 for (let i = 0; i < rows.length; i++) {
-                  const storedData = rows.item(i).data;
-
+                  const storedData = rows.item(0);
                   // Check if storedData is not null before parsing
                   if (storedData !== null) {
                     try {
-                      const parsedData = JSON.parse(storedData);
+                      setResponseData(storedData);
+                      setShowScannedRPIEDialog(true);
 
-                      const foundObject = parsedData.find((obj) => obj.post_title === extractedValue);
-                      if (foundObject) {
-                        // Assuming foundObject is the object you want to set as responseData
-                        console.log(foundObject);
-                        setResponseData(foundObject);
-                        break;
-                      } else {
-                        // Handle the case when no match is found
-                        console.log('No match found');
-                        setResponseData(null); // Set response data to null or handle the case as needed
-                      }
                     } catch (parseError) {
                       console.error('Error parsing stored data:', parseError);
                       // Handle the parsing error as needed for each record
                     }
+                  }else{
+                    console.log('No match found');
+                    setResponseData(null);
                   }
                 }
               } else {
                 // No data found in the database
-                // console.log('No match found');
-                // setResponseData(null); // Set response data to null or handle the case as needed
+                console.log('No match found');
+                setResponseData(null); // Set response data to null or handle the case as needed
               }
             },
             (tx, error) => {
@@ -130,7 +122,7 @@ function QRCodeScannerScreen() {
   };
 
   const handleConfirmScannedRPIE = () => {
-    navigation.navigate('SingleInventory', { post: responseData });
+    navigation.navigate('SingleInventory', { rpie: responseData });
     setShowScannedRPIEDialog(false);
     setCameraVisible(false); // Hide the camera when navigating away
   };
