@@ -1,574 +1,324 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, RefreshControl, ScrollView, TextInput, Dimensions } from 'react-native';
-import { DataTable, Button, Dialog, Portal, Paragraph, ActivityIndicator, MD2Colors } from 'react-native-paper';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator  } from 'react-native';
+import { DataTable, Button } from 'react-native-paper';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
-import * as SQLite from 'expo-sqlite';
-import { useState, useEffect } from 'react';
+import { db, createRpieSpecsTable, createRpieSpecsInfoTable } from '../database';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-class InventoryListScreen extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      currentPage: 1,
-      posts: [],
-      isConnected: true,
-      isRefreshing: false,
-      searchQuery: '',
-      itemsPerPage: 30, // Set the number of items per page
-      showDeleteDialog: false,
-      showMessageDialog: false,
-      dialogPost: null,
-      showDuplicateDialog: false,
-      message: '',
-      messageTitle: '',
-      isLoading: false,
-    };
+const InventoryListScreen = () => {
+  const navigation = useNavigation();
 
-    this.db = SQLite.openDatabase('rpie_specification.db');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timer, setTimer] = useState(null);
 
-    this.db.transaction((tx) => {
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS rpie_specification_sheet (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data TEXT
-        );`,
-        [],
-        () => console.log('Table created successfully'),
-        (error) => console.error('Error creating table', error)
-      );
-    });
-  }
+  const itemsPerPage = 10;
 
-  componentDidMount() {
-    console.log('loaded');
-    // this.fetchPosts();
-    this.unsubscribe = NetInfo.addEventListener(this.handleConnectivityChange);
-  }
+  const fetchData = async (page = 1, perPage = 2000) => {
+    try {
+      setLoading(true);
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
+      const wordpressApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/?per_page=${perPage}&page=${page}`;
+      const response = await axios.get(wordpressApiUrl);
+      const items = response.data;
 
-  handleConnectivityChange = (connectionInfo) => {
-    const isConnected = connectionInfo.isConnected;
-    this.setState({ isConnected });
-
-    if (isConnected) {
-      // this.fetchPosts();
-      this.fetchPosts();
-    } else {
-      this.loadStoredPosts();
+      return items; 
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
     }
   };
 
-  fetchPosts = (page = 1, perPage = 2000) => {
-    const wordpressApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/?per_page=${perPage}`;
-    let fetchAllPages_done = true;
+  const fetchAllPages = async () => {
+    let currentPage = 1;
+    let allPosts = [];
 
-    const fetchPage = async (pageNumber) => {
-      try {
-        const response = await axios.get(`${wordpressApiUrl}&page=${pageNumber}`);
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        throw error;
-      }
-    };
+    try {
+      while (true) {
+        const postsData = await fetchData(currentPage);
 
-    this.loadStoredPosts();
+        console.log(postsData.length);
+        if (postsData.length === 2) {
+          // No more pages, break the loop
+          break;
+        }else{
+          // Store the data in the database
+          await saveDataToDatabase(JSON.parse(postsData));
 
-    this.db.transaction((tx) => {
-      tx.executeSql(
-        'DELETE FROM rpie_specification_sheet',
-        [],
-        () => {
-          console.log('DELETED TABLE');
-          // this.setState({ posts: [] });
-        },
-        (tx, error) => {
-          console.error('Error executing SQL query:', error);
-          this.setState({ posts: [] }); // Handle the SQL query error as needed
-        }
-      );
-    });
+          currentPage++;
 
-    const fetchAllPages = async () => {
-      let currentPage = page;
-      let allPosts = [];
-
-      try {
-        while (true) {
-          this.setState({ isLoading: true });
-          const postsData = await fetchPage(currentPage);
-
-          if (postsData.length === 2) {
-            // No more pages, break the loop
-            fetchAllPages_done = false;
-            break;
-          }
-          this.db.transaction((tx) => {
-            tx.executeSql(
-              'INSERT INTO rpie_specification_sheet (data) VALUES (?)',
-                [postsData],
-                (_, result) =>
-                  console.log(`Post with ID ${result.insertId} inserted successfully`),
-                (error) => console.error(`Error inserting post:`, error)
-              );
-
-              currentPage++;
-          });
         }
 
-
-        
-
-        this.loadStoredPosts();
-
-       
-      } catch (error) {
-        console.error('Error fetching posts:', error);
       }
-    };
 
-    if (fetchAllPages_done) {
-      fetchAllPages();
+      setLoading(false);
+      // Load data from the database and update the UI
+      await fetchDataFromDatabase();
+    } catch (error) {
+      console.error('Error fetching posts:', error);
     }
   };
 
-  // fetchPosts = () => {
-  //   const wordpressApiUrl = 'https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/';
+  useEffect(() => {
 
-  //   axios
-  //   .get(wordpressApiUrl)
-  //   .then((response) => {
-  //     const posts = response.data;
-  //     console.log(posts);
-  //     this.setState({ posts: JSON.parse(posts)  });
-  //     // AsyncStorage.setItem('posts', posts)
-  //     //   .then(() => {
-  //     //     this.setState({ posts: JSON.parse(posts)  });
-  //     //   })
-  //     //   .catch((error) => {
-  //     //     console.error('Error saving posts:', error);
-  //     //     // Display an error message to the user
-  //     //   });
-  //   })
-  //   .catch((error) => {
-  //     console.error('Error fetching posts:', error);
-  //     // Handle the fetch error
-  //   });
-  // };
+    createRpieSpecsTable();
+    createRpieSpecsInfoTable();
+    // fetchAllPages();
 
-  loadStoredPosts = async () => {
-    // Execute a SELECT query to retrieve data from the SQLite database
-    this.db.transaction((tx) => {
-      tx.executeSql(
-        'SELECT * FROM rpie_specification_sheet',
-        [],
-        (_, { rows }) => {
-          let allPosts = []; // Declare allPosts using let
+    fetchDataFromDatabase();
+    
+  }, []);
 
-          for (let i = 0; i < rows.length; i++) {
-            const storedData = rows.item(i).data;
+  useEffect(() => {
+    if (timer) {
+      clearTimeout(timer); // Clear the timer if it exists
+    }
+    setTimer(setTimeout(() => fetchDataFromDatabase(searchQuery), 500)); // Set a new timer with a delay of 500ms
+    return () => clearTimeout(timer); // Clear the timer when the component unmounts
+  }, [searchQuery, page]); // Add `page` as a dependency
 
-            // Check if storedData is not null before parsing
-            if (storedData !== null) {
-              try {
-                const parsedData = JSON.parse(storedData);
-                
-                allPosts = [...allPosts, ...parsedData];
-              } catch (parseError) {
-                console.error('Error parsing stored data:', parseError);
-                // Handle the parsing error as needed for each record
+  useEffect(() => {
+    setData([]); // Clear the data state before fetching new data
+    fetchDataFromDatabase(searchQuery);
+  }, [page]);
+
+  const saveDataToDatabase = async (items) => {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        for (const item of items) {
+          // Check if a record with the same rpie_id already exists
+          tx.executeSql(
+            'SELECT * FROM rpie_specifications WHERE rpie_id = ?',
+            [item.post_title],
+            (_, { rows }) => {
+            
+              if (rows.length === 0) {
+                // Record with the same rpie_id does not exist, insert a new record
+                tx.executeSql(
+                  'INSERT INTO rpie_specifications (rpie_post_id, rpie_id, created_date, modified_date, newly_created, sync_status, status) VALUES (?, ?, ?, ?, ?, ? , ?)',
+                  [item.ID, item.post_title, item.post_date, item.post_modified, 'false', 'synced', item.acf.status ? item.acf.status : ''],
+                  (_, { insertId }) => {
+                    // Insert data into rpie_specification_information table
+                    tx.executeSql(
+                      'INSERT INTO rpie_specification_information (rpie_specs_id, installation, facility_num_name, room_num_loc, system, subsystem, assembly_category, nomenclature, rpie_index_number, rpie_index_number_code, bar_code_number, prime_component, group_name, group_risk_factor, rpie_risk_factor, rpie_spare, capacity_unit, capacity_value, manufacturer, model, serial_number, catalog_number, life_expectancy, contractor, contract_number, contract_start_date, contract_end_date, po_number, vendor, installation_date, warranty_start_date, spec_unit, spec_value, spec_corrections, equipment_hazard, equipment_hazard_corrections, area_supported, room_supported, note_date, note_text, status, status_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                      [
+                        insertId, 
+                        item.acf.installation ? item.acf.installation : '', 
+                        item.acf.facility_num_name ? item.acf.facility_num_name : '',
+                        item.acf.room_num_loc ? item.acf.room_num_loc : '',
+                        item.acf.system ? item.acf.system : '',
+                        item.acf.subsystem ? item.acf.subsystem : '',
+                        item.acf.assembly_category ? item.acf.assembly_category : '', 
+                        item.acf.nomenclature ? item.acf.nomenclature : '', 
+                        item.acf.rpie_index_number ? item.acf.rpie_index_number : '', 
+                        item.acf.rpie_index_number_code ? item.acf.rpie_index_number_code : '',
+                        item.acf.bar_code_number ? item.acf.bar_code_number : '',
+                        item.acf.prime_component ? item.acf.prime_component : '',
+                        item.acf.group_name ? item.acf.group_name : '',
+                        item.acf.group_risk_factor ? item.acf.group_risk_factor : '',
+                        item.acf.rpie_risk_factor ? item.acf.rpie_risk_factor : '',
+                        item.acf.rpie_spare ? item.acf.rpie_spare : '',
+                        item.acf.capacity_unit ? item.acf.capacity_unit : '',
+                        item.acf.capacity_value ? item.acf.capacity_value : '',
+                        item.acf.manufacturer ? item.acf.manufacturer : '',
+                        item.acf.model ? item.acf.model : '',
+                        item.acf.serial_number ? item.acf.serial_number : '',
+                        item.acf.catalog_number ? item.acf.catalog_number : '',
+                        item.acf.life_expectancy ? item.acf.life_expectancy : '',
+                        item.acf.contractor ? item.acf.contractor : '',
+                        item.acf.contract_number ? item.acf.contract_number : '',
+                        item.acf.contract_start_date ? item.acf.contract_start_date : '',
+                        item.acf.contract_end_date ? item.acf.contract_end_date : '',
+                        item.acf.po_number ? item.acf.po_number : '',
+                        item.acf.vendor ? item.acf.vendor : '',
+                        item.acf.installation_date ? item.acf.installation_date : '',
+                        item.acf.warranty_start_date ? item.acf.warranty_start_date : '',
+                        item.acf.spec_unit ? item.acf.spec_unit : '',
+                        item.acf.spec_value ? item.acf.spec_value : '',
+                        item.acf.spec_corrections ? item.acf.spec_corrections : '',
+                        item.acf.equipment_hazard ? item.acf.equipment_hazard : '',
+                        item.acf.equipment_hazard_corrections ? item.acf.equipment_hazard_corrections : '',
+                        item.acf.area_supported ? item.acf.area_supported : '',
+                        item.acf.room_supported ? item.acf.room_supported : '',
+                        item.acf.note_date ? item.acf.note_date : '',
+                        item.acf.note_text ? item.acf.note_text : '',
+                        item.acf.status ? item.acf.status : '',
+                        item.acf.status_date ? item.acf.status_date : '',
+                        // Additional values for missing columns, if needed
+                      ]
+                    );
+                  }
+                );
+              } else {
+                // Record with the same rpie_id already exists, update the existing record
+                const existingSpecId = rows.item(0).id;
+
+                tx.executeSql(
+                  'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE rpie_id = ?',
+                  [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status ? item.acf.status : '', item.post_title]
+                );
+
+                tx.executeSql(
+                  'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
+                  [
+                    item.acf.installation ? item.acf.installation : '', 
+                    item.acf.facility_num_name ? item.acf.facility_num_name : '',
+                    item.acf.room_num_loc ? item.acf.room_num_loc : '',
+                    item.acf.system ? item.acf.system : '',
+                    item.acf.subsystem ? item.acf.subsystem : '',
+                    item.acf.assembly_category ? item.acf.assembly_category : '', 
+                    item.acf.nomenclature ? item.acf.nomenclature : '', 
+                    item.acf.rpie_index_number ? item.acf.rpie_index_number : '', 
+                    item.acf.rpie_index_number_code ? item.acf.rpie_index_number_code : '',
+                    item.acf.bar_code_number ? item.acf.bar_code_number : '',
+                    item.acf.prime_component ? item.acf.prime_component : '',
+                    item.acf.group_name ? item.acf.group_name : '',
+                    item.acf.group_risk_factor ? item.acf.group_risk_factor : '',
+                    item.acf.rpie_risk_factor ? item.acf.rpie_risk_factor : '',
+                    item.acf.rpie_spare ? item.acf.rpie_spare : '',
+                    item.acf.capacity_unit ? item.acf.capacity_unit : '',
+                    item.acf.capacity_value ? item.acf.capacity_value : '',
+                    item.acf.manufacturer ? item.acf.manufacturer : '',
+                    item.acf.model ? item.acf.model : '',
+                    item.acf.serial_number ? item.acf.serial_number : '',
+                    item.acf.catalog_number ? item.acf.catalog_number : '',
+                    item.acf.life_expectancy ? item.acf.life_expectancy : '',
+                    item.acf.contractor ? item.acf.contractor : '',
+                    item.acf.contract_number ? item.acf.contract_number : '',
+                    item.acf.contract_start_date ? item.acf.contract_start_date : '',
+                    item.acf.contract_end_date ? item.acf.contract_end_date : '',
+                    item.acf.po_number ? item.acf.po_number : '',
+                    item.acf.vendor ? item.acf.vendor : '',
+                    item.acf.installation_date ? item.acf.installation_date : '',
+                    item.acf.warranty_start_date ? item.acf.warranty_start_date : '',
+                    item.acf.spec_unit ? item.acf.spec_unit : '',
+                    item.acf.spec_value ? item.acf.spec_value : '',
+                    item.acf.spec_corrections ? item.acf.spec_corrections : '',
+                    item.acf.equipment_hazard ? item.acf.equipment_hazard : '',
+                    item.acf.equipment_hazard_corrections ? item.acf.equipment_hazard_corrections : '',
+                    item.acf.area_supported ? item.acf.area_supported : '',
+                    item.acf.room_supported ? item.acf.room_supported : '',
+                    item.acf.note_date ? item.acf.note_date : '',
+                    item.acf.note_text ? item.acf.note_text : '',
+                    item.acf.status ? item.acf.status : '',
+                    item.acf.status_date ? item.acf.status_date : '',
+                    existingSpecId
+                  ]
+                );
               }
+            },
+            (_, error) => {
+              reject(error);
             }
-          }
-
-          this.setState({ posts: [] });
-          // Now you can use allPosts to set the state or perform other operations
-          this.setState({ posts: allPosts });
-           this.setState({ isLoading: false });
-        },
-        (tx, error) => {
-          console.error('Error executing SQL query:', error);
-          this.setState({ posts: [] }); // Handle the SQL query error as needed
+          );
         }
-      );
+      }, reject, () => {
+        fetchDataFromDatabase().then(resolve).catch(reject);
+      });
     });
   };
 
+  const fetchDataFromDatabase = async (query) => {
+    try {
+      const results = [];
+      const offset = page * itemsPerPage;
 
+      await db.transaction((tx) => {
+        tx.executeSql(
+          'SELECT COUNT(*) FROM rpie_specifications WHERE rpie_id LIKE ?',
+          [query ? `%${query}%` : '%'],
+          (_, { rows }) => {
+            const totalRows = rows.item(0)['COUNT(*)'];
+            console.log(totalRows);
+            setTotalPages(Math.ceil(totalRows / itemsPerPage));
+          },
+          (error) => console.error('Error counting rows from database:', error)
+        );
 
+        tx.executeSql(
+          'SELECT * FROM rpie_specifications WHERE rpie_id LIKE ? LIMIT ? OFFSET ?',
+          [query ? `%${query}%` : '%', itemsPerPage, offset],
+          (_, { rows }) => {
+            for (let i = 0; i < rows.length; i++) {
+              results.push(rows.item(i));
+            }
 
-  deletePost = () => {
-    const { postToDelete } = this.state;
+            setLoading(false);
+            setData(results);
 
-    this.hideDialog(); // Hide the dialog
-  };
+          },
+          (error) => console.error('Error fetching data from database:', error)
+        );
+      });
 
-
-  handleRefresh = () => {
-    this.setState({ isRefreshing: true });
-    this.fetchPosts();
-    setTimeout(() => {
-      this.setState({ isRefreshing: false });
-    }, 1000);
-  };
-
-  handleNextPage = () => {
-    const { currentPage, posts, itemsPerPage } = this.state;
-    const totalPages = Math.ceil(posts.length / itemsPerPage);
-    if (currentPage < totalPages) {
-      this.setState({ currentPage: currentPage + 1 });
+    } catch (error) {
+      console.error('Failed to fetch data from database:', error);
     }
   };
 
-  handlePreviousPage = () => {
-    const { currentPage } = this.state;
-    if (currentPage > 1) {
-      this.setState({ currentPage: currentPage - 1 });
-    }
+  const handleSearchQueryChange = (query) => {
+    setSearchQuery(query);
+    setPage(0);
+    setData([]); // Clear the data state before fetching new data
+    // fetchDataFromDatabase(query);
   };
 
-  handleView = (post) => {
-    this.props.navigation.navigate('SingleInventory', { post });
+  const handleRowPress = (rpie) => {
+    navigation.navigate('SingleInventory', { rpie });
   };
 
-  handleEdit = (post) => {
-    this.props.navigation.navigate('EditSingleInventory', { post });
-  };
-
-  // Function to show the dialog
-  showDeleteDialog = (post) => {
-    this.setState({ showDeleteDialog: true, dialogPost: post });
-  };
-
-  // Function to hide the dialog
-  hideDialog = () => {
-    this.setState({ showDeleteDialog: false, dialogPost: null });
-  };
-
-  // Function to hide the dialog
-  hideMessageDialog = () => {
-    this.setState({ showMessageDialog: false, dialogPost: null });
-  };
-
-  // Function to handle delete
-  handleDelete = (post) => {
-    this.showDeleteDialog(post); // Show the dialog when Delete is pressed
-  };
-
-  handleConfirmDelete = (post) => {
-    // Delete the post using post ID
-    const deleteApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/delete/${post.ID}`;
-    const messageTitle = 'Deletion Message';
-
-    axios
-    .get(deleteApiUrl)
-    .then((response) => {
-      console.log('Post deleted successfully:', response.data);
-      this.fetchPosts(); // Fetch updated posts after deletion
-      // Set the message
-      const message = `${post.post_title} has been deleted successfully.`;
-      // Set the message title
-
-      this.setState({
-        messageTitle, 
-        message,
-        showDeleteDialog: false,
-        showMessageDialog: true,
-        dialogPost: post,
-      });
-    })
-    .catch((error) => {
-      console.error('Error deleting post:', error);
-      this.hideDialog(); // Close the dialog even on error
-    });
-  };
-
-  hideDuplicateDialog = () => {
-    this.setState({ showDuplicateDialog: false, dialogPost: null });
-  };
-
-  handleDuplicate = (post) => {
-    this.setState({ showDuplicateDialog: true, dialogPost: post });
-  };
-
-  handleConfirmDuplicate = (post) => {
-    console.log('Confirmed Duplicate:', post);
-    // Implement your logic to duplicate the post here
-    const messageTitle = 'Duplicate Message';
-    // Set the message
-    const message = `${post.post_title} has been duplicated successfully.`;
-
-    const duplicateApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/duplicate/${post.ID}`;
-
-    // Update state and show message dialog
-    this.setState({ messageTitle, message, showMessageDialog: true });
-
-    axios
-    .get(duplicateApiUrl)
-    .then((response) => {
-      console.log('Duplicated successfully:', response.data);
-      this.fetchPosts(); // Fetch updated posts after deletion
-      // Set the message
-      const message = `${post.post_title} has been duplicated successfully.`;
-      // Set the message title
-
-      this.setState({
-        messageTitle, 
-        message,
-        showDuplicateDialog: false,
-        showMessageDialog: true,
-        dialogPost: post,
-      });
-    })
-    .catch((error) => {
-      console.error('Error duplicating post:', error);
-      this.hideDialog(); // Close the dialog even on error
-    });
-
-    // Close the duplicate dialog
-    this.hideDuplicateDialog();
-
-   
-  };
-
-  handleSearch = (query) => {
-    const { posts, itemsPerPage } = this.state;
-    const filteredPosts = posts.filter((post) =>
-      post.post_title.toLowerCase().includes(query.toLowerCase())
-    );
-
-    this.setState({
-      searchQuery: query,
-      currentPage: 1,
-      displayedData: filteredPosts.slice(0, itemsPerPage),
-    });
-  };
-
-
-
-  render() {
-    const { currentPage, posts, isRefreshing, searchQuery, itemsPerPage, isLoading } = this.state;
-   
-    const filteredPosts = posts.filter((post) =>
-      post.post_title.toLowerCase().includes(searchQuery.toLowerCase())
-
-    );
-
-    const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const displayedData = filteredPosts.slice(startIndex, endIndex);
-    const { showDialog } = this.state;
-    // Function to format the date
-    const formatDateTime = (rawDate) => {
-      const options = {
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: false // Use 24-hour format
-      };
-      return new Date(rawDate).toLocaleString(undefined, options);
-    };
-
-    const screenWidth = 1500;
-
-    console.log(screenWidth);
-    const columnWidth = screenWidth / 3;
-
+  if (loading) {
     return (
-      <View style={styles.container}>
-        {/*{isLoading && (
-                <ActivityIndicator animating={true} color={MD2Colors.red800} />
-        )}*/}
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by title"
-          value={searchQuery}
-          onChangeText={this.handleSearch}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={this.fetchPosts} />}
-
-        />
-        <ScrollView
-          style={styles.dataTableContainer}
-          horizontal
-          showsHorizontalScrollIndicator={true}
-        >
-          <ScrollView vertical showsVerticalScrollIndicator={true} refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={this.fetchPosts} />}
->
-            <DataTable>
-              <DataTable.Header>
-                <DataTable.Title style={[styles.columnTitle, { width: columnWidth }]}>RPIE Index #</DataTable.Title>
-                <DataTable.Title style={[styles.columnTitle, { width: columnWidth }]}>Created Date</DataTable.Title>
-                <DataTable.Title style={[styles.columnTitle, { width: columnWidth }]}>Status</DataTable.Title>
-                <DataTable.Title style={[styles.actionColumnTitle, { width: columnWidth }]}>Action</DataTable.Title>
-              </DataTable.Header>
-
-              {isLoading && (
-                <ActivityIndicator animating={true} color={MD2Colors.red800} />
-              )}
-              {displayedData.map((post, postIndex) => (
-                <DataTable.Row key={postIndex}>
-                  <DataTable.Cell style={[styles.column, { width: columnWidth }]}>
-                    <Text style={styles.cellText}>{post.post_title}</Text>
-                  </DataTable.Cell>
-                  <DataTable.Cell style={[styles.column, { width: columnWidth }]}>
-                    <Text style={styles.cellText}>{formatDateTime(post.post_date)}</Text>
-                  </DataTable.Cell>
-
-
-                  <DataTable.Cell style={[styles.column, { width: columnWidth }]}>
-                    {post.acf?.status === 'none' ? (
-                      <Text style={styles.cellText}></Text>
-                    ) : post.acf?.status === 'dmlss-entry-complete' ? (
-                      <Text style={styles.cellText}>DMLSS Entry Complete</Text>
-                    ) : post.acf?.status === 'inventory-complete' ? (
-                      <Text style={styles.cellText}>Inventory Complete</Text>
-                    ) : post.acf?.status === 'qc-complete' ? (
-                      <Text style={styles.cellText}>QC Complete</Text>
-                    ) : post.acf?.status === 'final-dmlss-complete' ? (
-                      <Text style={styles.cellText}>Final DMLSS Complete</Text>
-                    ) : (
-                      <Text style={styles.cellText}>{post.acf.status?.label}</Text>
-                    )}
-                  </DataTable.Cell>
-                  <DataTable.Cell style={[styles.actionColumn, { width: columnWidth }]}>
-                    <Button icon="eye" onPress={() => this.handleView(post)}>
-                      View
-                    </Button>
-                    <Button icon="pencil" onPress={() => this.handleEdit(post)}>
-                      Edit
-                    </Button>
-                    <Button icon="delete" onPress={() => this.handleDelete(post)}>
-                      Delete
-                    </Button>
-                    <Button icon="content-duplicate" onPress={() => this.handleDuplicate(post)}>
-                      Duplicate
-                    </Button>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              ))}
-            </DataTable>
-          </ScrollView>
-        </ScrollView>
-
-        <View style={styles.pagination}>
-          <TouchableOpacity onPress={this.handlePreviousPage} disabled={currentPage === 1}>
-            <Text style={styles.paginationText}>Previous</Text>
-          </TouchableOpacity>
-          <Text style={styles.paginationText}>
-            Page {currentPage} of {totalPages}
-          </Text>
-          <TouchableOpacity onPress={this.handleNextPage} disabled={currentPage === totalPages}>
-            <Text style={styles.paginationText}>Next</Text>
-          </TouchableOpacity>
-        </View> 
-
-        {/* Render the Dialog component */}
-        <Portal>
-          <Dialog visible={this.state.showDeleteDialog} onDismiss={this.hideDialog}>
-            <Dialog.Title>Confirm Deletion</Dialog.Title>
-            <Dialog.Content>
-              <Paragraph>
-                Are you sure you want to delete {this.state.dialogPost?.post_title}?
-              </Paragraph>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={this.hideDialog}>Cancel</Button>
-              <Button onPress={() => this.handleConfirmDelete(this.state.dialogPost)}>Delete</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-
-        <Portal>
-          <Dialog visible={this.state.showMessageDialog} onDismiss={this.hideMessageDialog}>
-            <Dialog.Title>{this.state.messageTitle}</Dialog.Title>
-            <Dialog.Content>
-              <Paragraph>{this.state.message}</Paragraph>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={this.hideMessageDialog}>OK</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-
-        {/* Render the Duplicate Confirmation Dialog */}
-        <Portal>
-          <Dialog visible={this.state.showDuplicateDialog} onDismiss={this.hideDuplicateDialog}>
-            <Dialog.Title>Confirm Duplicate</Dialog.Title>
-            <Dialog.Content>
-              <Paragraph>
-                Are you sure you want to duplicate {this.state.dialogPost?.post_title}?
-              </Paragraph>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={this.hideDuplicateDialog}>Cancel</Button>
-              <Button onPress={() => this.handleConfirmDuplicate(this.state.dialogPost)}>Duplicate</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 20 }}>Syncing...</Text>
       </View>
     );
   }
-}
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        placeholder="Search by RPIE ID"
+        value={searchQuery}
+        onChangeText={handleSearchQueryChange}
+      />
+      <DataTable>
+        <DataTable.Header>
+          <DataTable.Title>RPIE ID</DataTable.Title>
+          <DataTable.Title>Created By</DataTable.Title>
+        </DataTable.Header>
+
+        {data.map((rpie) => (
+          <TouchableOpacity key={rpie.id} onPress={() => handleRowPress(rpie)}>
+            <DataTable.Row>
+              <DataTable.Cell>{rpie.rpie_id}</DataTable.Cell>
+              <DataTable.Cell>{rpie.created_date}</DataTable.Cell>
+            </DataTable.Row>
+          </TouchableOpacity>
+        ))}
+
+        <DataTable.Pagination
+          page={page}
+          numberOfPages={totalPages}
+          onPageChange={(newPage) => setPage(newPage)}
+          label={`${page + 1} of ${totalPages}`}
+        />
+      </DataTable>
+
+      <Button style={{ backgroundColor: "#372160", width: '50%' }} textColor="#fff" onPress={() => fetchAllPages()}
+      > Sync Data </Button>
+    </View>
+  );
+};
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 20,
-  },
-  dataTableContainer: {
-    flex: 1,
-  },
-  columnTitle: {
-    flex: 1, // Use flex for dynamic width
-  },
-  column: {
-    flex: 1, // Use flex for dynamic width
-    borderWidth: 1,
-    borderColor: 'gray',
-    padding: 8,
-    width: '33%'
-  },
-  cellText: {
-    flexWrap: 'wrap',
-    maxWidth: '100%',
-  },
-  actionColumnTitle: {
-    width: 200, // Set a fixed width for the action column
-  },
-  actionColumn: {
-    width: 200, // Set a fixed width for the action column
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'gray',
-    padding: 8,
-  },
-  searchInput: {
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  paginationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginHorizontal: 10,
   },
 });
 
