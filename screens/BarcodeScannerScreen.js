@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, AppState } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
-import * as SQLite from 'expo-sqlite';
-import { Dialog, Portal, Paragraph, Button } from 'react-native-paper'; // Import Dialog and other components from react-native-paper
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Dialog, Portal, Paragraph, Button } from 'react-native-paper';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { db } from '../database';
+
+function BarcodeScannerComponent({ scanned, handleBarCodeScanned }) {
+  useEffect(() => {
+    // Update the onBarCodeScanned prop when the scanned state changes
+  }, [scanned]);
+
+  return (
+    <BarCodeScanner
+      onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+      style={{ height: 400, width: 400 }}
+    />
+  );
+}
 
 export default function BarcodeScannerScreen() {
   const navigation = useNavigation();
@@ -12,7 +24,7 @@ export default function BarcodeScannerScreen() {
   const [scanned, setScanned] = useState(false);
   const [text, setText] = useState('Not yet scanned')
   const [showScannedRPIEDialog, setShowScannedRPIEDialog] = useState(false);
-  const [responseData, setResponseData] = useState(null); // declare the responseData state
+  const [responseData, setResponseData] = useState(null);
 
   const askForCameraPermission = () => {
     (async () => {
@@ -21,15 +33,20 @@ export default function BarcodeScannerScreen() {
     })()
   }
 
+
   useFocusEffect(
     React.useCallback(() => {
-      // Fetch data from the WordPress REST API
-      askForCameraPermission();      
-      setScanned(false);
+      setHasPermission(null); // Reset hasPermission to null
+      askForCameraPermission(); // Request camera permission again
+      setScanned(false); // Reset scanned state to false
+      setText('Not yet scanned'); // Reset text state
     }, [])
   );
 
-  // What happens when we scan the bar code
+  useEffect(() => {
+    askForCameraPermission();
+  }, []);
+
   const handleBarCodeScanned = ({ type, data }) => {
     setScanned(true);
 
@@ -45,8 +62,7 @@ export default function BarcodeScannerScreen() {
         match = data;
         console.log('The string does not contain RPIE');
       }
-      
-      // const extractedValue = match[1];
+
       console.log(match);
       db.transaction((tx) => {
         tx.executeSql(
@@ -54,11 +70,10 @@ export default function BarcodeScannerScreen() {
           [match],
           (_, { rows }) => {
             if (rows.length > 0) {
-              
+
               for (let i = 0; i < rows.length; i++) {
                 const storedData = rows.item(0);
 
-                // Check if storedData is not null before parsing
                 if (storedData !== null) {
                   try {
                     setResponseData(storedData);
@@ -66,28 +81,24 @@ export default function BarcodeScannerScreen() {
 
                   } catch (parseError) {
                     console.error('Error parsing stored data:', parseError);
-                    // Handle the parsing error as needed for each record
                   }
-                }else{
+                } else {
                   console.log('No match found');
                   setResponseData(null);
                 }
               }
             } else {
-              // No data found in the database
               console.log('No match found');
-              setResponseData(null); // Set response data to null or handle the case as needed
+              setResponseData(null);
             }
           },
           (tx, error) => {
             console.error('Error executing SQL query:', error);
-            setResponseData(null); // Handle the SQL query error as needed
+            setResponseData(null);
           }
         );
       });
     }
-
-    
   };
 
   const hideScannedRPIEDialog = () => {
@@ -95,13 +106,10 @@ export default function BarcodeScannerScreen() {
   };
 
   const handleConfirmScannedRPIE = () => {
-    // Handle the case when the user wants to view the scanned RPIE
-    // You can navigate to another screen or perform other actions as needed
     navigation.navigate('SingleInventory', { rpie: responseData });
     setShowScannedRPIEDialog(false);
   };
 
-  // Check permissions and return the screens
   if (hasPermission === null) {
     return (
       <View style={styles.container}>
@@ -116,14 +124,9 @@ export default function BarcodeScannerScreen() {
       </View>)
   }
 
-  // Return the View
   return (
     <View style={styles.container}>
-      <View style={styles.barcodebox}>
-        <BarCodeScanner
-          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-          style={{ height: 600, width: 400 }} />
-      </View>
+      <BarcodeScannerComponent scanned={scanned} handleBarCodeScanned={handleBarCodeScanned} />
       <Text style={styles.maintext}>{text}</Text>
 
       {scanned && (

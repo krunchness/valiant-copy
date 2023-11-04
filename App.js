@@ -172,6 +172,15 @@ const CustomDrawerContent = ({ navigation }) => (
       </View>
       <View style={styles.menuItemsContainer}>
         <View style={styles.menuItem}>
+          <TouchableOpacity onPress={() => navigation.navigate('BarcodeScanner')}>
+            <View>
+              <Text>Scan QR/Barcode</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.menuItemsContainer}>
+        <View style={styles.menuItem}>
           <TouchableOpacity onPress={() => handleLogout(navigation)}>
             <View>
               <Text>Logout</Text>

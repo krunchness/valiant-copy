@@ -53,9 +53,6 @@ function DashboardScreen() {
         </View>
       </View>
       <View style={styles.buttonContainer}>
-        <Button mode="contained" onPress={() => navigation.navigate('QRCodeScannerScreen')}>
-          Scan QR Code
-        </Button>
 
         <Button mode="contained" onPress={() => navigation.navigate('BarcodeScanner')}>
           Scan Barcode
