@@ -98,7 +98,7 @@ const InventoryListScreen = () => {
                 // Record with the same rpie_id does not exist, insert a new record
                 tx.executeSql(
                   'INSERT INTO rpie_specifications (rpie_post_id, rpie_id, created_date, modified_date, newly_created, sync_status, status) VALUES (?, ?, ?, ?, ?, ? , ?)',
-                  [item.ID, item.post_title, item.post_date, item.post_modified, 'false', 'synced', item.acf.status ? item.acf.status : ''],
+                  [item.ID, item.post_title, item.post_date, item.post_modified, 'false', 'synced', item.acf.status.value ? item.acf.status.value : ''],
                   (_, { insertId }) => {
                     // Insert data into rpie_specification_information table
                     tx.executeSql(
@@ -144,7 +144,7 @@ const InventoryListScreen = () => {
                         item.acf.room_supported ? item.acf.room_supported : '',
                         item.acf.note_date ? item.acf.note_date : '',
                         item.acf.note_text ? item.acf.note_text : '',
-                        item.acf.status ? item.acf.status : '',
+                        item.acf.status.value ? item.acf.status.value : '',
                         item.acf.status_date ? item.acf.status_date : '',
                         // Additional values for missing columns, if needed
                       ]
@@ -202,7 +202,7 @@ const InventoryListScreen = () => {
                     item.acf.room_supported ? item.acf.room_supported : '',
                     item.acf.note_date ? item.acf.note_date : '',
                     item.acf.note_text ? item.acf.note_text : '',
-                    item.acf.status ? item.acf.status : '',
+                    item.acf.status.value ? item.acf.status.value : '',
                     item.acf.status_date ? item.acf.status_date : '',
                     existingSpecId
                   ]

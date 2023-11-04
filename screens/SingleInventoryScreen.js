@@ -51,13 +51,10 @@ const SingleInventoryScreen = ({ route, navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       // Fetch data from the WordPress REST API
+      console.log(rpie)
       fetchData(rpie);
     }, [rpie])
   );
-
-  useEffect(() => {
-    fetchData(rpie);
-  }, [rpie]);
 
   if (!data) {
     return <View><Text>Loading...</Text></View>;
