@@ -54,16 +54,15 @@ export default function BarcodeScannerScreen() {
       setText(data);
       let match = '';
       if (data.toLowerCase().includes('rpie')) {
-        console.log('The string contains RPIE');
-        const pattern = /RPIE ID:\s+(\S+)/;
-         match = data.match(pattern);
-         match = match[1];
+        const pattern = /RPIE ID:? ([^\n]+)/;
+        match = data.match(pattern);
+        match = match[1].trim();
       } else {
         match = data;
         console.log('The string does not contain RPIE');
       }
 
-      console.log(match);
+      // console.log(match);
       db.transaction((tx) => {
         tx.executeSql(
           'SELECT * FROM rpie_specifications WHERE rpie_id = ?',
