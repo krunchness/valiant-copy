@@ -1,679 +1,544 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, BackHandler  } from 'react-native';
-import { TextInput, Button, Dialog, Portal, Paragraph } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, BackHandler } from 'react-native';
+import { TextInput, Button, Dialog, Portal, Paragraph, Provider } from 'react-native-paper';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { db } from '../database';
 
-class EditSingleInventoryScreen extends React.Component {
-  
-  constructor(props) {
-    super(props);
-    this.state = {
-      installation: '',
-      facility_num_name: '',
-      room_num_loc: '',
-      system: '',
-      subsystem: '',
-      assembly_category: '',
-      nomenclature: '',
-      rpie_index_number: '',
-      bar_code_number: '',
-      prime_component: '',
-      group_name: '',
-      group_risk_factor: '',
-      rpie_risk_factor: '',
-      rpie_spare: '',
-      capacity_unit: '',
-      capacity_value: '',
-      manufacturer: '',
-      model: '',
-      serial_number: '',
-      catalog_number: '',
-      life_expectancy:'',
-      contractor: '',
-      contract_number: '',
-      contract_start_date: '',
-      contract_end_date: '',
-      po_number: '',
-      vendor: '',
-      installation_date: '',
-      warranty_start_date: '',
-      spec_unit: '',
-      spec_value: '',
-      spec_corrections: '',
-      equipment_hazard: '',
-      equipment_hazard_corrections: '',
-      area_supported: '',
-      note_date: '',
-      note_text: '',
-      rpie_index_number_code: '',
-      showMessageDialog: false, // Initialize the dialog state
-      showConfirmationDialog: false,
-      status: '',
-    };
+const EditSingleInventoryScreen = ({ route, navigation }) => {
+  const { rpie } = route.params;
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [data, setData] = useState(null);
 
-    this.saveChanges = this.saveChanges.bind(this);
-  }
-
-  handleBackPress = () => {
-    const { navigation } = this.props;
-    navigation.navigate('Inventory List');
-    return true; // Return true to indicate that the back action has been handled
-  };
-
-  handleStatusChange = (value) => {
-    this.setState({ status: value });
-  };
-
-
-  componentDidMount() {
-
-    BackHandler.addEventListener('hardwareBackPress', this.handleBackPress);
-
-    const { route } = this.props;
-    const { post } = route.params;
-    
-    // Update state with the post.acf values
-    this.setState({
-      post: post,
-      installation: post.acf.installation,
-      facility_num_name: post.acf.facility_num_name,
-      room_num_loc: post.acf.room_num_loc,
-      system: post.acf.system,
-      subsystem: post.acf.subsystem,
-      assembly_category: post.acf.assembly_category,
-      nomenclature: post.acf.nomenclature,
-      rpie_index_number: post.acf.rpie_index_number,
-      bar_code_number: post.acf.bar_code_number,
-      prime_component: post.acf.prime_component,
-      group_name: post.acf.group_name,
-      group_risk_factor: post.acf.group_risk_factor,
-      rpie_risk_factor: post.acf.rpie_risk_factor,
-      rpie_spare: post.acf.rpie_spare,
-      capacity_unit: post.acf.capacity_unit,
-      capacity_value: post.acf.capacity_value,
-      manufacturer: post.acf.manufacturer,
-      model: post.acf.model,
-      serial_number: post.acf.serial_number,
-      catalog_number: post.acf.catalog_number,
-      life_expectancy: post.acf.life_expectancy,
-      contractor: post.acf.contractor,
-      contract_number: post.acf.contract_number,
-      contract_start_date: post.acf.contract_start_date,
-      contract_end_date: post.acf.contract_end_date,
-      po_number: post.acf.po_number,
-      vendor: post.acf.vendor,
-      installation_date: post.acf.installation_date,
-      warranty_start_date: post.acf.warranty_start_date,
-      spec_unit: post.acf.spec_unit,
-      spec_value: post.acf.spec_value,
-      spec_corrections: post.acf.spec_corrections,
-      equipment_hazard: post.acf.equipment_hazard,
-      equipment_hazard_corrections: post.acf.equipment_hazard_corrections,
-      area_supported: post.acf.area_supported,
-      note_date: post.acf.note_date,
-      note_text: post.acf.note_text,
-      rpie_index_number_code: post.acf.rpie_index_number_code,
-      status: post.acf.status
+  useEffect(() => {
+    // Set the title of the screen based on the categoryName parameter
+    navigation.setOptions({
+      title: 'Edit RPIE : ' + rpie.rpie_id,
     });
-  }
+  }, [rpie, navigation]);
 
-  componentDidUpdate(prevProps, prevState) {
-    // Check if the post prop has changed
-    if (prevProps.route.params.post !== this.props.route.params.post) {
-      const { post } = this.props.route.params;
-      this.setState({
-        post: post,
-        installation: post.acf.installation,
-        facility_num_name: post.acf.facility_num_name,
-        room_num_loc: post.acf.room_num_loc,
-        system: post.acf.system,
-        subsystem: post.acf.subsystem,
-        assembly_category: post.acf.assembly_category,
-        nomenclature: post.acf.nomenclature,
-        rpie_index_number: post.acf.rpie_index_number,
-        bar_code_number: post.acf.bar_code_number,
-        prime_component: post.acf.prime_component,
-        group_name: post.acf.group_name,
-        group_risk_factor: post.acf.group_risk_factor,
-        rpie_risk_factor: post.acf.rpie_risk_factor,
-        rpie_spare: post.acf.rpie_spare,
-        capacity_unit: post.acf.capacity_unit,
-        capacity_value: post.acf.capacity_value,
-        manufacturer: post.acf.manufacturer,
-        model: post.acf.model,
-        serial_number: post.acf.serial_number,
-        catalog_number: post.acf.catalog_number,
-        life_expectancy: post.acf.life_expectancy,
-        contractor: post.acf.contractor,
-        contract_number: post.acf.contract_number,
-        contract_start_date: post.acf.contract_start_date,
-        contract_end_date: post.acf.contract_end_date,
-        po_number: post.acf.po_number,
-        vendor: post.acf.vendor,
-        installation_date: post.acf.installation_date,
-        warranty_start_date: post.acf.warranty_start_date,
-        spec_unit: post.acf.spec_unit,
-        spec_value: post.acf.spec_value,
-        spec_corrections: post.acf.spec_corrections,
-        equipment_hazard: post.acf.equipment_hazard,
-        equipment_hazard_corrections: post.acf.equipment_hazard_corrections,
-        area_supported: post.acf.area_supported,
-        note_date: post.acf.note_date,
-        note_text: post.acf.note_text,
-        rpie_index_number_code: post.acf.rpie_index_number_code,
-        status: post.acf.status
-      });
-    }
-  }
-
-  // Function to save changes
-  saveChanges = async () => {
-    
-    
-    // Implement your logic to save changes here
-    // Once changes are saved, you can call showMessageDialog() to show the success dialog
-    this.showConfirmationDialog();
-  };
-
-  // Function to show the message dialog
-  showMessageDialog = () => {
-    this.setState({ showMessageDialog: true });
-  };
-
-  showConfirmationDialog = () => {
-    this.setState({ showConfirmationDialog: true });
-  };
-
-  // Function to hide the message dialog
-  hideMessageDialog = () => {
-    this.setState({ showMessageDialog: false });
-  };
-
-  hideConfirmationDialog = () => {
-    this.setState({ showConfirmationDialog: false });
-  };
-
-  confirmSaveChanges = (postId) => {
-    // Hide the confirmation dialog
-    this.hideConfirmationDialog();
-
-    const updatedData = {
-      data: {
-        installation: this.state.installation,
-        facility_num_name: this.state.facility_num_name,
-        room_num_loc: this.state.room_num_loc,
-        system: this.state.system,
-        subsystem: this.state.subsystem,
-        assembly_category: this.state.assembly_category,
-        nomenclature: this.state.nomenclature,
-        rpie_index_number: this.state.rpie_index_number,
-        bar_code_number: this.state.bar_code_number,
-        prime_component: this.state.prime_component,
-        group_name: this.state.group_name,
-        group_risk_factor: this.state.group_risk_factor,
-        rpie_risk_factor: this.state.rpie_risk_factor,
-        rpie_spare: this.state.rpie_spare,
-        capacity_unit: this.state.capacity_unit,
-        capacity_value: this.state.capacity_value,
-        manufacturer: this.state.manufacturer,
-        model: this.state.model,
-        serial_number: this.state.serial_number,
-        catalog_number: this.state.catalog_number,
-        life_expectancy: this.state.life_expectancy,
-        contractor: this.state.contractor,
-        contract_number: this.state.contract_number,
-        contract_start_date: this.state.contract_start_date,
-        contract_end_date: this.state.contract_end_date,
-        po_number: this.state.po_number,
-        vendor: this.state.vendor,
-        installation_date: this.state.installation_date,
-        warranty_start_date: this.state.warranty_start_date,
-        spec_unit: this.state.spec_unit,
-        spec_value: this.state.spec_value,
-        spec_corrections: this.state.spec_corrections,
-        equipment_hazard: this.state.equipment_hazard,
-        equipment_hazard_corrections: this.state.equipment_hazard_corrections,
-        area_supported: this.state.area_supported,
-        note_date: this.state.note_date,
-        note_text: this.state.note_text,
-        rpie_index_number_code: this.state.rpie_index_number_code,
-        status: this.state.status
-      }
-
-    };
-
-
-    const sendPostRequest = async () => {
+  useEffect(() => {
+    const fetchData = async (rpie) => {
       try {
-        // Send a POST request using axios
-        const response = await axios.post(`https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/update/${postId}`, updatedData, {
-          headers: {
-            'Content-Type': 'application/json',
-            // You might need to include authentication headers if required
-          },
+        await db.transaction((tx) => {
+          tx.executeSql(
+            'SELECT * FROM rpie_specifications WHERE id = ?',
+            [rpie.id],
+            (_, { rows }) => {
+              let results = rows.item(0);
+              tx.executeSql(
+                'SELECT * FROM rpie_specification_information WHERE rpie_specs_id = ?',
+                [results.id],
+                (_, { rows }) => {
+                  results.specificationInformation = rows.item(0);
+                  console.log(results);
+                  setData(results);
+                },
+                (error) => console.error('Error fetching data from rpie_specification_information:', error)
+              );
+            },
+            (error) => console.error('Error fetching data from rpie_specifications:', error)
+          );
         });
-        console.log(response.data);
-        if (response.status === 200) {
-          // Data successfully saved
-          this.showMessageDialog();
-        } else {
-          // Handle error scenario
-          console.error('Error saving data:', response.status, response.statusText);
-          // You can display an error message or take other appropriate actions
-        }
       } catch (error) {
-        console.error('Error sending POST request:', error);
-        // Handle error scenario
-        // You can display an error message or take other appropriate actions
+        console.error('Failed to fetch data:', error);
       }
     };
+    fetchData(rpie);
+  }, [rpie]);
 
-    sendPostRequest();
-    // console.log(updatedData);
+  if (!data) {
+    return <View><Text>Loading...</Text></View>;
+  }
 
-    // Implement your logic to save changes here
-    // Once changes are saved, you can call showMessageDialog() to show the success dialog
+  const handleTextChange = (field, text) => {
+    setData({
+      ...data,
+      specificationInformation: {
+        ...data.specificationInformation,
+        [field]: text,
+      },
+    });
   };
 
+  const EditBtnDialog = (rpie) => {
+    // You can use the rpie object here if needed
+    setShowEditDialog(true);
+  };
 
+  const hideEditDialog = () => {
+    setShowEditDialog(false);
+  };
 
-  render() {
-    const {
-      installation,
-      facility_num_name,
-      room_num_loc,
-      system,
-      subsystem,
-      assembly_category,
-      nomenclature,
-      rpie_index_number,
-      bar_code_number,
-      prime_component,
-      group_name,
-      group_risk_factor,
-      rpie_risk_factor,
-      rpie_spare,
-      capacity_unit,
-      capacity_value,
-      manufacturer,
-      model,
-      serial_number,
-      catalog_number,
-      life_expectancy,
-      contractor,
-      contract_number,
-      contract_start_date,
-      contract_end_date,
-      po_number,
-      vendor,
-      installation_date,
-      warranty_start_date,
-      spec_unit,
-      spec_value,
-      spec_corrections,
-      equipment_hazard,
-      equipment_hazard_corrections,
-      area_supported,
-      note_date,
-      note_text,
-      rpie_index_number_code,
-      status,
-      post
-    } = this.state;
+  const handleConfirmEditDialog = (rpie) => {
+      try {
+        const updatePromises = [];
+        db.transaction((tx) => {
 
-    // console.log(post);
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView keyboardShouldPersistTaps="handled">
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="Installation"
-                value={installation}
-                editable = {true}
-                onChangeText={value => this.setState({ installation: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Facility # - Name"
-                value={facility_num_name}
-                editable = {true}
-                onChangeText={value => this.setState({ facility_num_name: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+          updatePromises.push(new Promise((resolve, reject) => {
+            tx.executeSql(
+              'UPDATE rpie_specifications SET modified_date = ?, sync_status = ? WHERE id = ?',
+              [rpie.modified_date, 'local-only' , rpie.rpie_id],
+              resolve,
+              reject
+            );
+          }));
+
+          updatePromises.push(new Promise((resolve, reject) => {
+            tx.executeSql(
+              'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
+              [
+                data.specificationInformation.installation,
+                data.specificationInformation.facility_num_name,
+                data.specificationInformation.room_num_loc,
+                data.specificationInformation.system,
+                data.specificationInformation.subsystem,
+                data.specificationInformation.assembly_category,
+                data.specificationInformation.nomenclature,
+                data.specificationInformation.rpie_index_number,
+                data.specificationInformation.rpie_index_number_code,
+                data.specificationInformation.bar_code_number,
+                data.specificationInformation.prime_component,
+                data.specificationInformation.group_name,
+                data.specificationInformation.group_risk_factor,
+                data.specificationInformation.rpie_risk_factor,
+                data.specificationInformation.rpie_spare,
+                data.specificationInformation.capacity_unit,
+                data.specificationInformation.capacity_value,
+                data.specificationInformation.manufacturer,
+                data.specificationInformation.model,
+                data.specificationInformation.serial_number,
+                data.specificationInformation.catalog_number,
+                data.specificationInformation.life_expectancy,
+                data.specificationInformation.contractor,
+                data.specificationInformation.contract_number,
+                data.specificationInformation.contract_start_date,
+                data.specificationInformation.contract_end_date,
+                data.specificationInformation.po_number,
+                data.specificationInformation.vendor,
+                data.specificationInformation.installation_date,
+                data.specificationInformation.warranty_start_date,
+                data.specificationInformation.spec_unit,
+                data.specificationInformation.spec_value,
+                data.specificationInformation.spec_corrections,
+                data.specificationInformation.equipment_hazard,
+                data.specificationInformation.equipment_hazard_corrections,
+                data.specificationInformation.area_supported,
+                data.specificationInformation.room_supported,
+                data.specificationInformation.note_date,
+                data.specificationInformation.note_text,
+                data.specificationInformation.status,
+                data.specificationInformation.status_date,
+                rpie.id
+              ],
+              resolve,
+              reject
+            );
+          }));
+
+        });
+
+        Promise.all(updatePromises)
+          .then(() => {
+            console.log('Data updated successfully');
+            navigation.navigate('SingleInventory', { rpie: rpie });
+          })
+          .catch((error) => {
+            console.error('Error updating data:', error);
+          });
+
+      } catch (error) {
+        console.error('Failed to update data:', error);
+      }
+      setShowEditDialog(false);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView keyboardShouldPersistTaps="handled">
+
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="RPIE Index #"
+              value={data.specificationInformation.rpie_index_number}
+              onChangeText={(text) => handleTextChange('rpie_index_number', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="Room # - Other Loc"
-                value={room_num_loc}
-                editable = {true}
-                onChangeText={value => this.setState({ room_num_loc: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="System"
-                value={system}
-                editable = {true}
-                onChangeText={value => this.setState({ system: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="RPIE Index # Code"
+              value={data.specificationInformation.rpie_index_number_code}
+              onChangeText={(text) => handleTextChange('rpie_index_number_code', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="Subsystem"
-                value={subsystem}
-                editable = {true}
-                onChangeText={value => this.setState({ subsystem: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Assembly Category"
-                value={assembly_category}
-                editable = {true}
-                onChangeText={value => this.setState({ assembly_category: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Facility # - Name"
+              value={data.specificationInformation.facility_num_name}
+              onChangeText={(text) => handleTextChange('facility_num_name', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="Nomenclature"
-                value={nomenclature}
-                editable = {true}
-                onChangeText={value => this.setState({ nomenclature: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Index #"
-                value={rpie_index_number}
-                editable = {true}
-                onChangeText={value => this.setState({ rpie_index_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Room # - Other Loc"
+              value={data.specificationInformation.room_num_loc}
+              onChangeText={(text) => handleTextChange('room_num_loc', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Index # Code"
-                value={rpie_index_number_code}
-                editable = {true}
-                onChangeText={value => this.setState({ rpie_index_number_code: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Bar Code #"
-                value={bar_code_number}
-                editable = {true}
-                onChangeText={value => this.setState({ bar_code_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="System"
+              value={data.specificationInformation.system}
+              onChangeText={(text) => handleTextChange('system', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Prime Component"
-                value={prime_component}
-                editable = {true}
-                onChangeText={value => this.setState({ prime_component: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Group Name"
-                value={group_name}
-                editable = {true}
-                onChangeText={value => this.setState({ group_name: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Subsystem"
+              value={data.specificationInformation.subsystem}
+              onChangeText={(text) => handleTextChange('subsystem', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Group Risk Factor"
-                value={group_risk_factor}
-                editable = {true}
-                onChangeText={value => this.setState({ group_risk_factor: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Risk Factor"
-                value={rpie_risk_factor}
-                editable = {true}
-                onChangeText={value => this.setState({ rpie_risk_factor: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Assembly Category"
+              value={data.specificationInformation.assembly_category}
+              onChangeText={(text) => handleTextChange('assembly_category', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="RPIE Spare"
-                value={rpie_spare}
-                editable = {true}
-                onChangeText={value => this.setState({ rpie_spare: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Capacity Unit"
-                value={capacity_unit}
-                editable = {true}
-                onChangeText={value => this.setState({ capacity_unit: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Nomenclature"
+              value={data.specificationInformation.nomenclature}
+              onChangeText={(text) => handleTextChange('nomenclature', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Capacity Value"
-                value={capacity_value}
-                editable = {true}
-                onChangeText={value => this.setState({ capacity_value: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Manufacturer"
-                value={manufacturer}
-                editable = {true}
-                onChangeText={value => this.setState({ manufacturer: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Bar Code #"
+              value={data.specificationInformation.bar_code_number}
+              onChangeText={(text) => handleTextChange('bar_code_number', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Model"
-                value={model}
-                editable = {true}
-                onChangeText={value => this.setState({ model: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Serial #"
-                value={serial_number}
-                editable = {true}
-                onChangeText={value => this.setState({ serial_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Prime Component"
+              value={data.specificationInformation.prime_component}
+              onChangeText={(text) => handleTextChange('prime_component', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Catalog #"
-                value={catalog_number}
-                editable = {true}
-                onChangeText={value => this.setState({ catalog_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Life Expectancy"
-                value={life_expectancy}
-                editable = {true}
-                onChangeText={value => this.setState({ life_expectancy: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Group Name"
+              value={data.specificationInformation.group_name}
+              onChangeText={(text) => handleTextChange('group_name', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Contractor"
-                value={contractor}
-                editable = {true}
-                onChangeText={value => this.setState({ contractor: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Contract #"
-                value={contract_number}
-                editable = {true}
-                onChangeText={value => this.setState({ contract_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Group Risk Factor"
+              value={data.specificationInformation.group_risk_factor}
+              onChangeText={(text) => handleTextChange('group_risk_factor', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Contract Start Date"
-                value={contract_start_date}
-                editable = {true}
-                onChangeText={value => this.setState({ contract_start_date: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Contract End Date"
-                value={contract_end_date}
-                editable = {true}
-                onChangeText={value => this.setState({ contract_end_date: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="RPIE Risk Factor"
+              value={data.specificationInformation.rpie_risk_factor}
+              onChangeText={(text) => handleTextChange('rpie_risk_factor', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="PO Number"
-                value={po_number}
-                editable = {true}
-                onChangeText={value => this.setState({ po_number: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Vendor"
-                value={vendor}
-                editable = {true}
-                onChangeText={value => this.setState({ vendor: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="RPIE Spare"
+              value={data.specificationInformation.rpie_spare}
+              onChangeText={(text) => handleTextChange('rpie_spare', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Installation Date"
-                value={installation_date}
-                editable = {true}
-                onChangeText={value => this.setState({ installation_date: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Warranty Start Date"
-                value={warranty_start_date}
-                editable = {true}
-                onChangeText={value => this.setState({ warranty_start_date: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Capacity Unit"
+              value={data.specificationInformation.capacity_unit}
+              onChangeText={(text) => handleTextChange('capacity_unit', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
-          <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Spec Unit"
-                value={spec_unit}
-                editable = {true}
-                onChangeText={value => this.setState({ spec_unit: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Spec Value"
-                value={spec_value}
-                editable = {true}
-                onChangeText={value => this.setState({ spec_value: value })}
-                style={styles.disabled_text}
-              />
-            </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Capacity Value"
+              value={data.specificationInformation.capacity_value}
+              onChangeText={(text) => handleTextChange('capacity_value', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
           </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Manufacturer"
+              value={data.specificationInformation.manufacturer}
+              onChangeText={(text) => handleTextChange('manufacturer', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Model"
+              value={data.specificationInformation.model}
+              onChangeText={(text) => handleTextChange('model', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Serial #"
+              value={data.specificationInformation.serial_number}
+              onChangeText={(text) => handleTextChange('serial_number', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Catalog #"
+              value={data.specificationInformation.catalog_number}
+              onChangeText={(text) => handleTextChange('catalog_number', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Life Expectancy"
+              value={data.specificationInformation.life_expectancy}
+              onChangeText={(text) => handleTextChange('life_expectancy', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Contractor"
+              value={data.specificationInformation.contractor}
+              onChangeText={(text) => handleTextChange('contractor', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Contract #"
+              value={data.specificationInformation.contract_number}
+              onChangeText={(text) => handleTextChange('contract_number', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Contract Start Date"
+              value={data.specificationInformation.contract_start_date}
+              onChangeText={(text) => handleTextChange('contract_start_date', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Contract End Date"
+              value={data.specificationInformation.contract_end_date}
+              onChangeText={(text) => handleTextChange('contract_end_date', text)}
+              editable={true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="PO Number"
+              value={data.specificationInformation.po_number}
+              onChangeText={(text) => handleTextChange('po_number', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Vendor"
+              value={data.specificationInformation.vendor}
+              onChangeText={(text) => handleTextChange('vendor', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Installation"
+              value={data.specificationInformation.installation}
+              onChangeText={(text) => handleTextChange('installation', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Installation Date"
+              value={data.specificationInformation.installation_date}
+              onChangeText={(text) => handleTextChange('installation_date', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Warranty Start Date"
+              value={data.specificationInformation.warranty_start_date}
+              onChangeText={(text) => handleTextChange('warranty_start_date', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Spec Unit"
+              value={data.specificationInformation.spec_unit}
+              onChangeText={(text) => handleTextChange('spec_unit', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Spec Value"
+              value={data.specificationInformation.spec_value}
+              onChangeText={(text) => handleTextChange('spec_value', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="Corrections"
+              value={data.specificationInformation.spec_corrections}
+              onChangeText={(text) => handleTextChange('spec_corrections', text)}
+              editable = {true}
+              style={styles.disabled_text}
+            />
+          </View>
+        </View>
+        <Provider>
           <View style={styles.row}>
-            
-            <View style={styles.column}>
-              <TextInput
-                label="Corrections"
-                value={spec_corrections}
-                editable = {true}
-                onChangeText={value => this.setState({ spec_corrections: value })}
-                style={styles.disabled_text}
-              />
-            </View>
             <View style={styles.column}>
               <TextInput
                 label="Equipment Hazard"
-                value={equipment_hazard}
+                value={data.specificationInformation.equipment_hazard}
+                onChangeText={(text) => handleTextChange('equipment_hazard', text)}
                 editable = {true}
-                onChangeText={value => this.setState({ equipment_hazard: value })}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <TextInput
+                label="Equipment Hazard Corrections"
+                value={data.specificationInformation.equipment_hazard_corrections}
+                onChangeText={(text) => handleTextChange('equipment_hazard_corrections', text)}
+                editable = {true}
                 style={styles.disabled_text}
               />
             </View>
@@ -682,96 +547,95 @@ class EditSingleInventoryScreen extends React.Component {
             <View style={styles.column}>
               <TextInput
                 label="Area Supported"
-                value={area_supported}
+                value={data.specificationInformation.area_supported}
+                onChangeText={(text) => handleTextChange('area_supported', text)}
                 editable = {true}
-                onChangeText={value => this.setState({ area_supported: value })}
-                style={styles.disabled_text}
-              />
-            </View>
-            <View style={styles.column}>
-              <TextInput
-                label="Equipment Hazard Corrections"
-                value={equipment_hazard_corrections}
-                editable = {true}
-                onChangeText={value => this.setState({ equipment_hazard_corrections: value })}
                 style={styles.disabled_text}
               />
             </View>
           </View>
           <View style={styles.row}>
-            
+            <View style={styles.column}>
+              <TextInput
+                label="Room Supported"
+                value={data.specificationInformation.room_supported}
+                onChangeText={(text) => handleTextChange('room_supported', text)}
+                editable = {true}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
                 label="Note Date"
-                value={note_date}
+                value={data.specificationInformation.note_date}
+                onChangeText={(text) => handleTextChange('note_date', text)}
                 editable = {true}
-                onChangeText={value => this.setState({ note_date: value })}
                 style={styles.disabled_text}
               />
             </View>
+          </View>
+          <View style={styles.row}>
             <View style={styles.column}>
               <TextInput
                 label="Note Text"
-                value={note_text}
+                value={data.specificationInformation.note_text}
+                onChangeText={(text) => handleTextChange('note_text', text)}
                 editable = {true}
-                onChangeText={value => this.setState({ note_text: value })}
                 style={styles.disabled_text}
               />
             </View>
-            
           </View>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Picker
+              <TextInput
                 label="Status"
-                selectedValue={this.state.status}
-                onValueChange={(value) => this.setState({ status: value })}
-                style={styles.dropdown}
-              >
-                <Picker.Item label="-- Select Current Status --" value="none" />
-                <Picker.Item label="Inventory Complete" value="inventory-complete" />
-                <Picker.Item label="DMLSS Entry Complete" value="dmlss-entry-complete" />
-                <Picker.Item label="QC Complete " value="qc-complete" />
-                <Picker.Item label="Final DMLSS Complete" value="final-dmlss-complete" />
-              </Picker>
+                value={data.specificationInformation.status}
+                onChangeText={(text) => handleTextChange('status', text)}
+                editable = {true}
+                style={styles.disabled_text}
+              />
             </View>
           </View>
           <View style={styles.row}>
-            
             <View style={styles.column}>
-              <Button onPress={this.saveChanges}>Save Changes</Button>
+              <TextInput
+                label="Status Date"
+                value={data.specificationInformation.status_date}
+                onChangeText={(text) => handleTextChange('status_date', text)}
+                editable = {true}
+                style={styles.disabled_text}
+              />
+            </View>
+          </View>
+          <View style={styles.Btnrow}>
+            <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={() => EditBtnDialog(rpie)} >
+                Update
+              </Button>
             </View>
           </View>
 
           <Portal>
-            <Dialog visible={this.state.showMessageDialog} onDismiss={this.hideMessageDialog}>
-              <Dialog.Title>Update Message</Dialog.Title>
+            <Dialog visible={showEditDialog} onDismiss={hideEditDialog}>
+              <Dialog.Title>Confirm to Edit RPIE</Dialog.Title>
               <Dialog.Content>
-                <Paragraph>Changes have been saved successfully.</Paragraph>
+                <Paragraph>
+                  Are you sure you want to update this RPIE Specification?
+                </Paragraph>
               </Dialog.Content>
               <Dialog.Actions>
-                <Button onPress={this.hideMessageDialog}>OK</Button>
+                <Button onPress={hideEditDialog}>Cancel</Button>
+                <Button onPress={() => handleConfirmEditDialog(rpie)}>Update</Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>
-
-          <Portal>
-            <Dialog visible={this.state.showConfirmationDialog} onDismiss={this.hideConfirmationDialog}>
-              <Dialog.Title>Confirm Update</Dialog.Title>
-              <Dialog.Content>
-                <Paragraph>Are you sure you want to save the changes?</Paragraph>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={this.hideConfirmationDialog}>Cancel</Button>
-                <Button onPress={() => this.confirmSaveChanges(post.ID)}>Confirm</Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-}
+        </Provider>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -782,12 +646,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
   },
+  Btnrow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    marginTop: 30
+  },
   column: {
     flex: 1,
     marginRight: 8,
   },
   disabled_text: {
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#fff",
     color: "blue"
   },
   dropdown: {
@@ -797,6 +666,15 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 4,
   },
+  Btn: {
+    backgroundColor: '#372160',
+    marginBottom: 10
+  },
+  buttonContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
 });
+
 
 export default EditSingleInventoryScreen;
