@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, BackHandler } from 'react-native';
 import { TextInput, Button, Dialog, Portal, Paragraph, Provider } from 'react-native-paper';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
 import { db } from '../database';
 
 const EditSingleInventoryScreen = ({ route, navigation }) => {
@@ -51,13 +52,36 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
   }
 
   const handleTextChange = (field, text) => {
-    setData({
-      ...data,
-      specificationInformation: {
-        ...data.specificationInformation,
-        [field]: text,
-      },
-    });
+    if (field === 'status') {
+
+      if (text !== 'none') {
+        setData({
+          ...data,
+          specificationInformation: {
+            ...data.specificationInformation,
+            [field]: text,
+            status_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+          },
+        });
+      }else{
+        setData({
+          ...data,
+          specificationInformation: {
+            ...data.specificationInformation,
+            [field]: text,
+            status_date: "",
+          },
+        });
+      }
+    } else {
+      setData({
+        ...data,
+        specificationInformation: {
+          ...data.specificationInformation,
+          [field]: text,
+        },
+      });
+    }
   };
 
   const EditBtnDialog = (rpie) => {
@@ -77,7 +101,7 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           updatePromises.push(new Promise((resolve, reject) => {
             tx.executeSql(
               'UPDATE rpie_specifications SET modified_date = ?, sync_status = ? WHERE id = ?',
-              [rpie.modified_date, 'local-only' , rpie.rpie_id],
+              [rpie.modified_date, 'local-only' , rpie.id],
               resolve,
               reject
             );
@@ -589,24 +613,18 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.row}>
             <View style={styles.column}>
-              <TextInput
+              <Picker
                 label="Status"
-                value={data.specificationInformation.status}
-                onChangeText={(text) => handleTextChange('status', text)}
-                editable = {true}
-                style={styles.disabled_text}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <TextInput
-                label="Status Date"
-                value={data.specificationInformation.status_date}
-                onChangeText={(text) => handleTextChange('status_date', text)}
-                editable = {true}
-                style={styles.disabled_text}
-              />
+                selectedValue={data.specificationInformation.status}
+                onValueChange={(text) => handleTextChange('status', text)}
+                style={styles.dropdown}
+              >
+                <Picker.Item label="-- Select Current Status --" value="none" />
+                <Picker.Item label="Inventory Complete" value="inventory-complete" />
+                <Picker.Item label="DMLSS Entry Complete" value="dmlss-entry-complete" />
+                <Picker.Item label="QC Complete " value="qc-complete" />
+                <Picker.Item label="Final DMLSS Complete" value="final-dmlss-complete" />
+              </Picker>
             </View>
           </View>
           <View style={styles.Btnrow}>

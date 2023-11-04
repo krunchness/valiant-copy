@@ -7,6 +7,7 @@ import { db } from '../database';
 const SingleInventoryScreen = ({ route, navigation }) => {
   const { rpie } = route.params;
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -74,6 +75,50 @@ const SingleInventoryScreen = ({ route, navigation }) => {
   const handleConfirmEditDialog = (rpie) => {
     navigation.navigate('EditSingleInventory', { rpie: rpie });
     setShowEditDialog(false);
+  };
+
+  const deleteBtnDialog = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const hideDeleteDialog = () => {
+    setShowDeleteDialog(false);
+  };
+
+  const handleConfirmDeleteDialog = () => {
+    deleteData(data);
+    setShowDeleteDialog(false);
+  };
+
+  const deleteData = (data) => {
+    db.transaction((tx) => {
+      // Insert data into the rpie_specifications_trash table
+      tx.executeSql(
+        'INSERT INTO rpie_specifications_trash (rpie_post_id, rpie_id) VALUES (?, ?)',
+        [data.rpie_post_id, data.rpie_id],
+        () => {
+          // Delete data from the rpie_specifications_information table
+          tx.executeSql(
+            'DELETE FROM rpie_specification_information WHERE rpie_specs_id = ?',
+            [data.id],
+            () => {
+              // Delete data from the rpie_specifications table
+              tx.executeSql(
+                'DELETE FROM rpie_specifications WHERE id = ?',
+                [data.id],
+                () => {
+                  // Navigate back to the previous screen or perform other actions as needed
+                  navigation.goBack();
+                },
+                (error) => console.error('Error deleting data from rpie_specifications:', error)
+              );
+            },
+            (error) => console.error('Error deleting data from rpie_specifications_information:', error)
+          );
+        },
+        (error) => console.error('Error inserting data into rpie_specifications_trash:', error)
+      );
+    });
   };
 
   return (
@@ -506,7 +551,7 @@ const SingleInventoryScreen = ({ route, navigation }) => {
               </View>
               <View style={styles.row}>
                 <View style={styles.buttonContainer}>
-                  <Button textColor="#fff" mode="contained" style={styles.Btn} >
+                  <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={deleteBtnDialog}>
                     Delete
                   </Button>
                 </View>
@@ -523,6 +568,19 @@ const SingleInventoryScreen = ({ route, navigation }) => {
                   <Dialog.Actions>
                     <Button onPress={hideEditDialog}>Cancel</Button>
                     <Button onPress={() => handleConfirmEditDialog(rpie)}>Edit</Button>
+                  </Dialog.Actions>
+                </Dialog>
+
+                <Dialog visible={showDeleteDialog} onDismiss={hideDeleteDialog}>
+                  <Dialog.Title>Confirm Delete</Dialog.Title>
+                  <Dialog.Content>
+                    <Paragraph>
+                      Are you sure you want to delete this RPIE Specification?
+                    </Paragraph>
+                  </Dialog.Content>
+                  <Dialog.Actions>
+                    <Button onPress={hideDeleteDialog}>Cancel</Button>
+                    <Button onPress={handleConfirmDeleteDialog}>Delete</Button>
                   </Dialog.Actions>
                 </Dialog>
               </Portal>
