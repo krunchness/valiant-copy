@@ -240,3 +240,17 @@ export const createRpieSpecsInfoTable = () => {
     `);
   });
 };
+
+export const createDeletedRpieSpecsTable = () => {
+  db.transaction((tx) => {
+    tx.executeSql(`
+      CREATE TABLE IF NOT EXISTS rpie_specifications_trash (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rpie_post_id INT,
+        rpie_id TEXT,
+        deleted_date TEXT DEFAULT (DATETIME('now')),
+        sync_status TEXT DEFAULT 'local-sync'
+      )
+    `);
+  });
+};

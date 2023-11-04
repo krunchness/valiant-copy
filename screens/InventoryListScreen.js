@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator  } from 'react-native';
 import { DataTable, Button } from 'react-native-paper';
 import axios from 'axios';
-import { db, createRpieSpecsTable, createRpieSpecsInfoTable } from '../database';
+import { db, createRpieSpecsTable, createRpieSpecsInfoTable, createDeletedRpieSpecsTable } from '../database';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const InventoryListScreen = () => {
@@ -61,10 +61,22 @@ const InventoryListScreen = () => {
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // Fetch data from the WordPress REST API
+      createRpieSpecsTable();
+      createRpieSpecsInfoTable();
+      createDeletedRpieSpecsTable();
+      
+      fetchDataFromDatabase();
+    }, [])
+  );
+
   useEffect(() => {
 
     createRpieSpecsTable();
     createRpieSpecsInfoTable();
+    createDeletedRpieSpecsTable();
     // fetchAllPages();
 
     fetchDataFromDatabase();
