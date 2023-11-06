@@ -60,7 +60,7 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           specificationInformation: {
             ...data.specificationInformation,
             [field]: text,
-            status_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+            status_date: new Date().toISOString().split('T')[0],
           },
         });
       }else{
@@ -97,11 +97,11 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
       try {
         const updatePromises = [];
         db.transaction((tx) => {
-
+          const currentDate = new Date().toISOString().split('T')[0];
           updatePromises.push(new Promise((resolve, reject) => {
             tx.executeSql(
               'UPDATE rpie_specifications SET modified_date = ?, sync_status = ? WHERE id = ?',
-              [rpie.modified_date, 'local-only' , rpie.id],
+              [currentDate, 'local-only' , rpie.id],
               resolve,
               reject
             );

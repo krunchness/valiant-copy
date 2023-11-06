@@ -9,6 +9,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import InventoryListScreen from './screens/InventoryListScreen';
 import SingleInventoryScreen from './screens/SingleInventoryScreen';
 import EditSingleInventoryScreen from './screens/EditSingleInventoryScreen';
+import RpieChangesListScreen from './screens/RpieChangesListScreen';
 import QRCodeScannerScreen from './screens/QRCodeScannerScreen';
 import BarcodeScannerScreen from './screens/BarcodeScannerScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -118,6 +119,13 @@ function DashboardNavigator() {
             : 'Edit Single Inventory'
         })}
       />
+      <Drawer.Screen 
+        name="Updated RPIE" 
+        component={RpieChangesListScreen} 
+        options={({ route }) => ({
+          title: 'All RPIE Changes'
+        })}
+      />
       <Drawer.Screen name="Profile" component={ProfileScreen} />
       <Drawer.Screen name="QRCodeScannerScreen" component={QRCodeScannerScreen} 
         options={({ route }) => ({
@@ -166,6 +174,15 @@ const CustomDrawerContent = ({ navigation }) => (
           <TouchableOpacity onPress={() => navigation.navigate('Inventory List')}>
             <View>
               <Text>Inventory List</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.menuItemsContainer}>
+        <View style={styles.menuItem}>
+          <TouchableOpacity onPress={() => navigation.navigate('Updated RPIE')}>
+            <View>
+              <Text>Sync RPIE Changes</Text>
             </View>
           </TouchableOpacity>
         </View>
