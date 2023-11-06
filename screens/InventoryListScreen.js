@@ -167,11 +167,13 @@ const InventoryListScreen = () => {
                 // Record with the same rpie_id already exists, update the existing record
                 const existingSpecId = rows.item(0).id;
 
+
                 tx.executeSql(
                   'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE rpie_id = ?',
-                  [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status ? item.acf.status : '', item.post_title]
+                  [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status.value ? item.acf.status.value : '', item.post_title]
                 );
 
+                
                 tx.executeSql(
                   'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
                   [
