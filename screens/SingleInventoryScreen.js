@@ -35,7 +35,7 @@ const SingleInventoryScreen = ({ route, navigation }) => {
 
                 results.specificationInformation = rows.item(0);
                 console.log(results);
-                console.log('test');
+                console.log('enjay');
                 setData(results);
               },
               (error) => console.error('Error fetching data from rpie_specification_information:', error)
@@ -51,8 +51,6 @@ const SingleInventoryScreen = ({ route, navigation }) => {
   
   useFocusEffect(
     React.useCallback(() => {
-      // Fetch data from the WordPress REST API
-      console.log(rpie)
       fetchData(rpie);
     }, [rpie])
   );
@@ -93,31 +91,36 @@ const SingleInventoryScreen = ({ route, navigation }) => {
   const deleteData = (data) => {
     db.transaction((tx) => {
       // Insert data into the rpie_specifications_trash table
+      const currentDate = new Date().toISOString().split('T')[0];
       tx.executeSql(
-        'INSERT INTO rpie_specifications_trash (rpie_post_id, rpie_id) VALUES (?, ?)',
-        [data.rpie_post_id, data.rpie_id],
-        () => {
-          // Delete data from the rpie_specifications_information table
-          tx.executeSql(
-            'DELETE FROM rpie_specification_information WHERE rpie_specs_id = ?',
-            [data.id],
-            () => {
-              // Delete data from the rpie_specifications table
-              tx.executeSql(
-                'DELETE FROM rpie_specifications WHERE id = ?',
-                [data.id],
-                () => {
-                  // Navigate back to the previous screen or perform other actions as needed
-                  navigation.goBack();
-                },
-                (error) => console.error('Error deleting data from rpie_specifications:', error)
-              );
-            },
-            (error) => console.error('Error deleting data from rpie_specifications_information:', error)
-          );
-        },
-        (error) => console.error('Error inserting data into rpie_specifications_trash:', error)
+        'UPDATE rpie_specifications SET modified_date = ?, sync_status = ? WHERE id = ?',
+        [currentDate, 'deleted', data.id]
       );
+      // tx.executeSql(
+      //   'INSERT INTO rpie_specifications_trash (rpie_post_id, rpie_id) VALUES (?, ?)',
+      //   [data.rpie_post_id, data.rpie_id],
+      //   () => {
+      //     // Delete data from the rpie_specifications_information table
+      //     tx.executeSql(
+      //       'DELETE FROM rpie_specification_information WHERE rpie_specs_id = ?',
+      //       [data.id],
+      //       () => {
+      //         // Delete data from the rpie_specifications table
+      //         tx.executeSql(
+      //           'DELETE FROM rpie_specifications WHERE id = ?',
+      //           [data.id],
+      //           () => {
+      //             // Navigate back to the previous screen or perform other actions as needed
+      //             navigation.goBack();
+      //           },
+      //           (error) => console.error('Error deleting data from rpie_specifications:', error)
+      //         );
+      //       },
+      //       (error) => console.error('Error deleting data from rpie_specifications_information:', error)
+      //     );
+      //   },
+      //   (error) => console.error('Error inserting data into rpie_specifications_trash:', error)
+      // );
     });
   };
 
