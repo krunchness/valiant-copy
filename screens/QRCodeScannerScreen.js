@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, BackHandler } from 'react-native';
+import { View, Text, BackHandler, Alert } from 'react-native';
 import { Portal, Dialog, Provider, Paragraph, Button } from 'react-native-paper';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
@@ -95,13 +95,13 @@ function QRCodeScannerScreen() {
                       // Handle the parsing error as needed for each record
                     }
                   }else{
-                    console.log('No match found');
+                    Alert.alert('Error', 'No RPIE Found. Please Sync or check if exists on the inventory list');
                     setResponseData(null);
                   }
                 }
               } else {
                 // No data found in the database
-                console.log('No match found');
+                Alert.alert('Error', 'No RPIE Found. Please Sync or check if exists on the inventory list');
                 setResponseData(null); // Set response data to null or handle the case as needed
               }
             },

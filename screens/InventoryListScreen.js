@@ -17,49 +17,57 @@ const InventoryListScreen = () => {
 
   const itemsPerPage = 10;
 
-  const fetchData = async (page = 1, perPage = 2000) => {
+  const fetchData = async (page = 1, perPage = 1000) => {
     try {
       setLoading(true);
 
       const wordpressApiUrl = `https://valiantservices.dcodeprojects.co.in/wp-json/sections/v1/specification_sheet/?per_page=${perPage}&page=${page}`;
-      const response = await axios.get(wordpressApiUrl);
+
+      const response = await axios.get(wordpressApiUrl, {
+        timeout: 5000, // Set a timeout of 5000ms (5 seconds)
+      });
+
       const items = response.data;
 
-      return items; 
+      return items;
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      return []; // Return an empty array in case of an error
+    } finally {
+      setLoading(false); // Set the loading state to false in the finally block to ensure it's always executed
     }
   };
 
   const fetchAllPages = async () => {
     let currentPage = 1;
     let allPosts = [];
+    let postsData = [];
 
     try {
-      while (true) {
-        const postsData = await fetchData(currentPage);
+      do {
+        postsData = await fetchData(currentPage);
 
         console.log(postsData.length);
-        if (postsData.length === 2) {
-          // No more pages, break the loop
-          break;
-        }else{
+
+        if (postsData.length !== 2) {
           // Store the data in the database
           await saveDataToDatabase(JSON.parse(postsData));
 
           currentPage++;
-
+          console.log(currentPage);
         }
 
-      }
+      } while (postsData.length !== 2);
 
       setLoading(false);
       // Load data from the database and update the UI
       await fetchDataFromDatabase();
+
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
   };
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,7 +87,7 @@ const InventoryListScreen = () => {
     createDeletedRpieSpecsTable();
     // fetchAllPages();
 
-    fetchDataFromDatabase();
+    // fetchDataFromDatabase(); 
     
   }, []);
 
@@ -93,7 +101,7 @@ const InventoryListScreen = () => {
 
   useEffect(() => {
     setData([]); // Clear the data state before fetching new data
-    fetchDataFromDatabase(searchQuery);
+    // fetchDataFromDatabase(searchQuery);
   }, [page]);
 
   const saveDataToDatabase = async (items) => {
@@ -167,60 +175,73 @@ const InventoryListScreen = () => {
                 // Record with the same rpie_id already exists, update the existing record
                 const existingSpecId = rows.item(0).id;
 
+                // Convert the given date-time string to a JavaScript Date object
+                const inputDateTime = new Date(item.post_modified);
 
-                tx.executeSql(
-                  'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE rpie_id = ?',
-                  [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status.value ? item.acf.status.value : '', item.post_title]
-                );
+                // Get the current date and time
+                const currentDate = new Date(rows.item(0).modified_date);
+
+                // Compare the input date-time with the current date and time
+                if (inputDateTime > currentDate) {
+
+                  console.log('The input date-time is in the future.');
+
+                  tx.executeSql(
+                    'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE id = ?',
+                    [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status.value ? item.acf.status.value : '', existingSpecId]
+                  );
+                  
+                  tx.executeSql(
+                    'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
+                    [
+                      item.acf.installation ? item.acf.installation : '', 
+                      item.acf.facility_num_name ? item.acf.facility_num_name : '',
+                      item.acf.room_num_loc ? item.acf.room_num_loc : '',
+                      item.acf.system ? item.acf.system : '',
+                      item.acf.subsystem ? item.acf.subsystem : '',
+                      item.acf.assembly_category ? item.acf.assembly_category : '', 
+                      item.acf.nomenclature ? item.acf.nomenclature : '', 
+                      item.acf.rpie_index_number ? item.acf.rpie_index_number : '', 
+                      item.acf.rpie_index_number_code ? item.acf.rpie_index_number_code : '',
+                      item.acf.bar_code_number ? item.acf.bar_code_number : '',
+                      item.acf.prime_component ? item.acf.prime_component : '',
+                      item.acf.group_name ? item.acf.group_name : '',
+                      item.acf.group_risk_factor ? item.acf.group_risk_factor : '',
+                      item.acf.rpie_risk_factor ? item.acf.rpie_risk_factor : '',
+                      item.acf.rpie_spare ? item.acf.rpie_spare : '',
+                      item.acf.capacity_unit ? item.acf.capacity_unit : '',
+                      item.acf.capacity_value ? item.acf.capacity_value : '',
+                      item.acf.manufacturer ? item.acf.manufacturer : '',
+                      item.acf.model ? item.acf.model : '',
+                      item.acf.serial_number ? item.acf.serial_number : '',
+                      item.acf.catalog_number ? item.acf.catalog_number : '',
+                      item.acf.life_expectancy ? item.acf.life_expectancy : '',
+                      item.acf.contractor ? item.acf.contractor : '',
+                      item.acf.contract_number ? item.acf.contract_number : '',
+                      item.acf.contract_start_date ? item.acf.contract_start_date : '',
+                      item.acf.contract_end_date ? item.acf.contract_end_date : '',
+                      item.acf.po_number ? item.acf.po_number : '',
+                      item.acf.vendor ? item.acf.vendor : '',
+                      item.acf.installation_date ? item.acf.installation_date : '',
+                      item.acf.warranty_start_date ? item.acf.warranty_start_date : '',
+                      item.acf.spec_unit ? item.acf.spec_unit : '',
+                      item.acf.spec_value ? item.acf.spec_value : '',
+                      item.acf.spec_corrections ? item.acf.spec_corrections : '',
+                      item.acf.equipment_hazard ? item.acf.equipment_hazard : '',
+                      item.acf.equipment_hazard_corrections ? item.acf.equipment_hazard_corrections : '',
+                      item.acf.area_supported ? item.acf.area_supported : '',
+                      item.acf.room_supported ? item.acf.room_supported : '',
+                      item.acf.note_date ? item.acf.note_date : '',
+                      item.acf.note_text ? item.acf.note_text : '',
+                      item.acf.status.value ? item.acf.status.value : '',
+                      item.acf.status_date ? item.acf.status_date : '',
+                      existingSpecId
+                    ]
+                  );
+                }
+                
 
                 
-                tx.executeSql(
-                  'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
-                  [
-                    item.acf.installation ? item.acf.installation : '', 
-                    item.acf.facility_num_name ? item.acf.facility_num_name : '',
-                    item.acf.room_num_loc ? item.acf.room_num_loc : '',
-                    item.acf.system ? item.acf.system : '',
-                    item.acf.subsystem ? item.acf.subsystem : '',
-                    item.acf.assembly_category ? item.acf.assembly_category : '', 
-                    item.acf.nomenclature ? item.acf.nomenclature : '', 
-                    item.acf.rpie_index_number ? item.acf.rpie_index_number : '', 
-                    item.acf.rpie_index_number_code ? item.acf.rpie_index_number_code : '',
-                    item.acf.bar_code_number ? item.acf.bar_code_number : '',
-                    item.acf.prime_component ? item.acf.prime_component : '',
-                    item.acf.group_name ? item.acf.group_name : '',
-                    item.acf.group_risk_factor ? item.acf.group_risk_factor : '',
-                    item.acf.rpie_risk_factor ? item.acf.rpie_risk_factor : '',
-                    item.acf.rpie_spare ? item.acf.rpie_spare : '',
-                    item.acf.capacity_unit ? item.acf.capacity_unit : '',
-                    item.acf.capacity_value ? item.acf.capacity_value : '',
-                    item.acf.manufacturer ? item.acf.manufacturer : '',
-                    item.acf.model ? item.acf.model : '',
-                    item.acf.serial_number ? item.acf.serial_number : '',
-                    item.acf.catalog_number ? item.acf.catalog_number : '',
-                    item.acf.life_expectancy ? item.acf.life_expectancy : '',
-                    item.acf.contractor ? item.acf.contractor : '',
-                    item.acf.contract_number ? item.acf.contract_number : '',
-                    item.acf.contract_start_date ? item.acf.contract_start_date : '',
-                    item.acf.contract_end_date ? item.acf.contract_end_date : '',
-                    item.acf.po_number ? item.acf.po_number : '',
-                    item.acf.vendor ? item.acf.vendor : '',
-                    item.acf.installation_date ? item.acf.installation_date : '',
-                    item.acf.warranty_start_date ? item.acf.warranty_start_date : '',
-                    item.acf.spec_unit ? item.acf.spec_unit : '',
-                    item.acf.spec_value ? item.acf.spec_value : '',
-                    item.acf.spec_corrections ? item.acf.spec_corrections : '',
-                    item.acf.equipment_hazard ? item.acf.equipment_hazard : '',
-                    item.acf.equipment_hazard_corrections ? item.acf.equipment_hazard_corrections : '',
-                    item.acf.area_supported ? item.acf.area_supported : '',
-                    item.acf.room_supported ? item.acf.room_supported : '',
-                    item.acf.note_date ? item.acf.note_date : '',
-                    item.acf.note_text ? item.acf.note_text : '',
-                    item.acf.status.value ? item.acf.status.value : '',
-                    item.acf.status_date ? item.acf.status_date : '',
-                    existingSpecId
-                  ]
-                );
               }
             },
             (_, error) => {
@@ -276,7 +297,7 @@ const InventoryListScreen = () => {
     setSearchQuery(query);
     setPage(0);
     setData([]); // Clear the data state before fetching new data
-    // fetchDataFromDatabase(query);
+    fetchDataFromDatabase(query);
   };
 
   const handleRowPress = (rpie) => {

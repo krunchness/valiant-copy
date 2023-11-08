@@ -100,8 +100,8 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           const currentDate = new Date().toISOString().split('T')[0];
           updatePromises.push(new Promise((resolve, reject) => {
             tx.executeSql(
-              'UPDATE rpie_specifications SET modified_date = ?, sync_status = ? WHERE id = ?',
-              [currentDate, 'local-only' , rpie.id],
+              'UPDATE rpie_specifications SET sync_status = ? WHERE id = ?',
+              ['local-only' , rpie.id],
               resolve,
               reject
             );

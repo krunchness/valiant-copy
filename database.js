@@ -172,6 +172,7 @@ export function loginUser(username, password) {
 
 export const createRpieSpecsTable = () => {
   db.transaction((tx) => {
+    // Create the rpie_specifications table if it doesn't exist
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS rpie_specifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -183,6 +184,12 @@ export const createRpieSpecsTable = () => {
         sync_status TEXT,
         status TEXT
       )
+    `);
+
+    // Create an index on the rpie_id column
+    tx.executeSql(`
+      CREATE INDEX IF NOT EXISTS idx_rpie_id
+      ON rpie_specifications (rpie_id)
     `);
   });
 };
