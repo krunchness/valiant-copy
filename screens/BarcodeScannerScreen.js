@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, AppState } from 'react-native';
+import { Text, View, StyleSheet, AppState, Alert } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Dialog, Portal, Paragraph, Button } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -82,12 +82,12 @@ export default function BarcodeScannerScreen() {
                     console.error('Error parsing stored data:', parseError);
                   }
                 } else {
-                  console.log('No match found');
+                  Alert.alert('Error', 'No RPIE Found. Please Sync or check if exists on the inventory list');
                   setResponseData(null);
                 }
               }
             } else {
-              console.log('No match found');
+              Alert.alert('Error', 'No RPIE Found. Please Sync or check if exists on the inventory list');
               setResponseData(null);
             }
           },
