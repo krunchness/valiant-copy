@@ -271,7 +271,7 @@ const InventoryListScreen = () => {
         );
 
         tx.executeSql(
-          'SELECT * FROM rpie_specifications WHERE rpie_id LIKE ? LIMIT ? OFFSET ?',
+          'SELECT * FROM rpie_specifications WHERE rpie_id LIKE ? ORDER BY created_date DESC LIMIT ? OFFSET ?',
           [query ? `%${query}%` : '%', itemsPerPage, offset],
           (_, { rows }) => {
             for (let i = 0; i < rows.length; i++) {
@@ -280,7 +280,6 @@ const InventoryListScreen = () => {
 
             setLoading(false);
             setData(results);
-
           },
           (error) => console.error('Error fetching data from database:', error)
         );
