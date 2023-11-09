@@ -240,9 +240,6 @@ const InventoryListScreen = () => {
                     ]
                   );
                 }
-                
-
-                
               }
             },
             (_, error) => {

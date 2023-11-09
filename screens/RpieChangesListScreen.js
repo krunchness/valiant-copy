@@ -274,7 +274,8 @@ const RpieChangesListScreen = () => {
             <DataTable.Row>
               <DataTable.Cell>{rpie.rpie_id}</DataTable.Cell>
               <DataTable.Cell>
-                {rpie.sync_status === "local-only" ? "Device Changes Only" : 
+                {rpie.sync_status === "local-only" ? "Device Changes Only" :
+                rpie.sync_status === "duplicate-only" ? "Duplicated on Device Only" : 
                  rpie.sync_status === "deleted" ? "Deleted on Device Only" : 
                  rpie.sync_status}
               </DataTable.Cell>
