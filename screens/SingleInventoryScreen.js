@@ -170,7 +170,7 @@ const SingleInventoryScreen = ({ route, navigation }) => {
               data.specificationInformation.room_supported ? data.specificationInformation.room_supported : '',
               data.specificationInformation.note_date ? data.specificationInformation.note_date : '',
               data.specificationInformation.note_text ? data.specificationInformation.note_text : '',
-              data.specificationInformation.status.value ? data.specificationInformation.status.value : '',
+              data.specificationInformation.status ? data.specificationInformation.status : '',
               data.specificationInformation.status_date ? data.specificationInformation.status_date : '',
             ],
             (tx, result) => {
