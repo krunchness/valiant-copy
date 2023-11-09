@@ -36,10 +36,8 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
                   [results.id],
                   (_, { rows }) => {
                     results.specificationInformation = rows.item(0);
-                    console.log('test');
                     setData(results);
                     setOldRpie(rows.item(0).new_rpie_id);
-                    console.log(oldRpie);
                   },
                   (error) => console.error('Error fetching data from rpie_specification_information:', error)
                 );
@@ -120,12 +118,22 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
         db.transaction((tx) => {
           const currentDate = new Date().toISOString().split('T')[0];
           updatePromises.push(new Promise((resolve, reject) => {
-            tx.executeSql(
-              'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
-              ['local-only' , data.specificationInformation.new_rpie_id, rpie.id],
-              resolve,
-              reject
-            );
+
+            if (rpie.sync_status == 'duplicate-only') {
+              tx.executeSql(
+                'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
+                ['duplicate-only' , data.specificationInformation.new_rpie_id ? data.specificationInformation.new_rpie_id : data.specificationInformation.rpie_index_number, rpie.id],
+                resolve,
+                reject
+              );
+            }else{
+              tx.executeSql(
+                'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
+                ['local-only' , data.specificationInformation.new_rpie_id ? data.specificationInformation.new_rpie_id : data.specificationInformation.rpie_index_number, rpie.id],
+                resolve,
+                reject
+              );
+            }
           })); 
 
           updatePromises.push(new Promise((resolve, reject) => {
