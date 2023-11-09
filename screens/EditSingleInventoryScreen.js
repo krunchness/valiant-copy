@@ -670,11 +670,6 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
                 Update
               </Button>
             </View>
-            <View style={styles.buttonContainer}>
-              <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={() => CancelBtn(rpie)} >
-                Cancel
-              </Button>
-            </View>
           </View>
 
           <Portal>
