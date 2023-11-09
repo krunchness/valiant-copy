@@ -186,10 +186,10 @@ export const createRpieSpecsTable = () => {
       )
     `);
 
-    // Create an index on the rpie_id column
+    // Create an index on the rpie_post_id column
     tx.executeSql(`
-      CREATE INDEX IF NOT EXISTS idx_rpie_id
-      ON rpie_specifications (rpie_id)
+      CREATE INDEX IF NOT EXISTS idx_rpie_post_id
+      ON rpie_specifications (rpie_post_id)
     `);
   });
 };
@@ -208,6 +208,7 @@ export const createRpieSpecsInfoTable = () => {
         assembly_category TEXT,
         nomenclature TEXT,
         rpie_index_number TEXT,
+        new_rpie_id TEXT,
         rpie_index_number_code TEXT,
         bar_code_number TEXT,
         prime_component TEXT,

@@ -9,43 +9,51 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
   const { rpie } = route.params;
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [data, setData] = useState(null);
+  const [oldRpie, setOldRpie] = useState('');
+
 
   useEffect(() => {
     // Set the title of the screen based on the categoryName parameter
     navigation.setOptions({
       title: 'Edit RPIE : ' + rpie.rpie_id,
     });
+
+
   }, [rpie, navigation]);
 
-  useEffect(() => {
-    const fetchData = async (rpie) => {
-      try {
-        await db.transaction((tx) => {
-          tx.executeSql(
-            'SELECT * FROM rpie_specifications WHERE id = ?',
-            [rpie.id],
-            (_, { rows }) => {
-              let results = rows.item(0);
-              tx.executeSql(
-                'SELECT * FROM rpie_specification_information WHERE rpie_specs_id = ?',
-                [results.id],
-                (_, { rows }) => {
-                  results.specificationInformation = rows.item(0);
-                  console.log(results);
-                  setData(results);
-                },
-                (error) => console.error('Error fetching data from rpie_specification_information:', error)
-              );
-            },
-            (error) => console.error('Error fetching data from rpie_specifications:', error)
-          );
-        });
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      }
-    };
-    fetchData(rpie);
-  }, [rpie]);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async (rpie) => {
+        try {
+          await db.transaction((tx) => {
+            tx.executeSql(
+              'SELECT * FROM rpie_specifications WHERE id = ?',
+              [rpie.id],
+              (_, { rows }) => {
+                let results = rows.item(0);
+                tx.executeSql(
+                  'SELECT * FROM rpie_specification_information WHERE rpie_specs_id = ?',
+                  [results.id],
+                  (_, { rows }) => {
+                    results.specificationInformation = rows.item(0);
+                    console.log('test');
+                    setData(results);
+                    setOldRpie(rows.item(0).new_rpie_id);
+                    console.log(oldRpie);
+                  },
+                  (error) => console.error('Error fetching data from rpie_specification_information:', error)
+                );
+              },
+              (error) => console.error('Error fetching data from rpie_specifications:', error)
+            );
+          });
+        } catch (error) {
+          console.error('Failed to fetch data:', error);
+        }
+      };
+      fetchData(rpie);
+    }, [rpie])
+  );
 
   if (!data) {
     return <View><Text>Loading...</Text></View>;
@@ -73,7 +81,16 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           },
         });
       }
-    } else {
+    }else if(field === 'new_rpie_id'){
+      setData({
+        ...data,
+        specificationInformation: {
+          ...data.specificationInformation,
+          [field]: text,
+          rpie_index_number: oldRpie,
+        },
+      });
+    }else {
       setData({
         ...data,
         specificationInformation: {
@@ -93,6 +110,10 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
     setShowEditDialog(false);
   };
 
+  const CancelBtn = (rpie) => {
+    navigation.navigate('SingleInventory', { rpie: rpie });
+  };
+
   const handleConfirmEditDialog = (rpie) => {
       try {
         const updatePromises = [];
@@ -100,16 +121,16 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           const currentDate = new Date().toISOString().split('T')[0];
           updatePromises.push(new Promise((resolve, reject) => {
             tx.executeSql(
-              'UPDATE rpie_specifications SET sync_status = ? WHERE id = ?',
-              ['local-only' , rpie.id],
+              'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
+              ['local-only' , data.specificationInformation.new_rpie_id, rpie.id],
               resolve,
               reject
             );
-          }));
+          })); 
 
           updatePromises.push(new Promise((resolve, reject) => {
             tx.executeSql(
-              'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
+              'UPDATE rpie_specification_information SET installation = ?, facility_num_name = ?, room_num_loc = ?, system = ?, subsystem = ?, assembly_category = ?, nomenclature = ?, rpie_index_number = ?, new_rpie_id = ?, rpie_index_number_code = ?, bar_code_number = ?, prime_component = ?, group_name = ?, group_risk_factor = ?, rpie_risk_factor = ?, rpie_spare = ?, capacity_unit = ?, capacity_value = ?, manufacturer = ?, model = ?, serial_number = ?, catalog_number = ?, life_expectancy = ?, contractor = ?, contract_number = ?, contract_start_date = ?, contract_end_date = ?, po_number = ?, vendor = ?, installation_date = ?, warranty_start_date = ?, spec_unit = ?, spec_value = ?, spec_corrections = ?, equipment_hazard = ?, equipment_hazard_corrections = ?, area_supported = ?, room_supported = ?, note_date = ?, note_text = ?, status = ?, status_date = ? WHERE rpie_specs_id = ?',
               [
                 data.specificationInformation.installation,
                 data.specificationInformation.facility_num_name,
@@ -119,6 +140,7 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
                 data.specificationInformation.assembly_category,
                 data.specificationInformation.nomenclature,
                 data.specificationInformation.rpie_index_number,
+                data.specificationInformation.new_rpie_id,
                 data.specificationInformation.rpie_index_number_code,
                 data.specificationInformation.bar_code_number,
                 data.specificationInformation.prime_component,
@@ -183,9 +205,19 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
         <View style={styles.row}>
           <View style={styles.column}>
             <TextInput
-              label="RPIE Index #"
+              label="RPIE Index # (Disabled for edit)"
               value={data.specificationInformation.rpie_index_number}
-              onChangeText={(text) => handleTextChange('rpie_index_number', text)}
+              editable={false}
+              style={styles.field_disabled_text}
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <TextInput
+              label="RPIE New Index #"
+              value={data.specificationInformation.new_rpie_id}
+              onChangeText={(text) => handleTextChange('new_rpie_id', text)}
               editable={true}
               style={styles.disabled_text}
             />
@@ -633,6 +665,11 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
                 Update
               </Button>
             </View>
+            <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={() => CancelBtn(rpie)} >
+                Cancel
+              </Button>
+            </View>
           </View>
 
           <Portal>
@@ -676,6 +713,10 @@ const styles = StyleSheet.create({
   disabled_text: {
     backgroundColor: "#fff",
     color: "blue"
+  },
+  field_disabled_text: {
+    backgroundColor: "#EDE4FF",
+    color: "#fff"
   },
   dropdown: {
     backgroundColor: "#EDE4FF",

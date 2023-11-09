@@ -34,8 +34,6 @@ const SingleInventoryScreen = ({ route, navigation }) => {
               (_, { rows }) => {
 
                 results.specificationInformation = rows.item(0);
-                console.log(results);
-                console.log('enjay');
                 setData(results);
               },
               (error) => console.error('Error fetching data from rpie_specification_information:', error)
@@ -133,6 +131,16 @@ const SingleInventoryScreen = ({ route, navigation }) => {
                 <TextInput
                   label="RPIE Index #"
                   value={data.specificationInformation.rpie_index_number}
+                  editable = {false}
+                  style={styles.disabled_text}
+                />
+              </View>
+            </View>
+            <View style={styles.row}>
+              <View style={styles.column}>
+                <TextInput
+                  label="RPIE New Index #"
+                  value={data.specificationInformation.new_rpie_id}
                   editable = {false}
                   style={styles.disabled_text}
                 />
@@ -556,6 +564,11 @@ const SingleInventoryScreen = ({ route, navigation }) => {
                 <View style={styles.buttonContainer}>
                   <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={deleteBtnDialog}>
                     Delete
+                  </Button>
+                </View>
+                <View style={styles.buttonContainer}>
+                  <Button textColor="#fff" mode="contained" style={styles.Btn}>
+                    Print
                   </Button>
                 </View>
               </View>

@@ -110,8 +110,8 @@ const InventoryListScreen = () => {
         for (const item of items) {
           // Check if a record with the same rpie_id already exists
           tx.executeSql(
-            'SELECT * FROM rpie_specifications WHERE rpie_id = ?',
-            [item.post_title],
+            'SELECT * FROM rpie_specifications WHERE rpie_post_id = ?',
+            [item.ID],
             (_, { rows }) => {
             
               if (rows.length === 0) {
@@ -122,7 +122,7 @@ const InventoryListScreen = () => {
                   (_, { insertId }) => {
                     // Insert data into rpie_specification_information table
                     tx.executeSql(
-                      'INSERT INTO rpie_specification_information (rpie_specs_id, installation, facility_num_name, room_num_loc, system, subsystem, assembly_category, nomenclature, rpie_index_number, rpie_index_number_code, bar_code_number, prime_component, group_name, group_risk_factor, rpie_risk_factor, rpie_spare, capacity_unit, capacity_value, manufacturer, model, serial_number, catalog_number, life_expectancy, contractor, contract_number, contract_start_date, contract_end_date, po_number, vendor, installation_date, warranty_start_date, spec_unit, spec_value, spec_corrections, equipment_hazard, equipment_hazard_corrections, area_supported, room_supported, note_date, note_text, status, status_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                      'INSERT INTO rpie_specification_information (rpie_specs_id, installation, facility_num_name, room_num_loc, system, subsystem, assembly_category, nomenclature, rpie_index_number, new_rpie_id, rpie_index_number_code, bar_code_number, prime_component, group_name, group_risk_factor, rpie_risk_factor, rpie_spare, capacity_unit, capacity_value, manufacturer, model, serial_number, catalog_number, life_expectancy, contractor, contract_number, contract_start_date, contract_end_date, po_number, vendor, installation_date, warranty_start_date, spec_unit, spec_value, spec_corrections, equipment_hazard, equipment_hazard_corrections, area_supported, room_supported, note_date, note_text, status, status_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                       [
                         insertId, 
                         item.acf.installation ? item.acf.installation : '', 
@@ -133,6 +133,7 @@ const InventoryListScreen = () => {
                         item.acf.assembly_category ? item.acf.assembly_category : '', 
                         item.acf.nomenclature ? item.acf.nomenclature : '', 
                         item.acf.rpie_index_number ? item.acf.rpie_index_number : '', 
+                        item.acf.new_rpie_id ? item.acf.new_rpie_id : '',
                         item.acf.rpie_index_number_code ? item.acf.rpie_index_number_code : '',
                         item.acf.bar_code_number ? item.acf.bar_code_number : '',
                         item.acf.prime_component ? item.acf.prime_component : '',
@@ -187,8 +188,8 @@ const InventoryListScreen = () => {
                   console.log('The input date-time is in the future.');
 
                   tx.executeSql(
-                    'UPDATE rpie_specifications SET rpie_post_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE id = ?',
-                    [item.ID, item.post_date, item.post_modified, 'synced' , item.acf.status.value ? item.acf.status.value : '', existingSpecId]
+                    'UPDATE rpie_specifications SET rpie_post_id = ?, rpie_id = ?, created_date = ?, modified_date = ?, sync_status = ?, status = ? WHERE id = ?',
+                    [item.ID, item.post_title, item.post_date, item.post_modified, 'synced' , item.acf.status.value ? item.acf.status.value : '', existingSpecId]
                   );
                   
                   tx.executeSql(
