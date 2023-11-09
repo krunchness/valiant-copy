@@ -103,6 +103,7 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
 
   const EditBtnDialog = (rpie) => {
     // You can use the rpie object here if needed
+    console.log(rpie);
     setShowEditDialog(true);
   };
 
@@ -120,12 +121,22 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
         db.transaction((tx) => {
           const currentDate = new Date().toISOString().split('T')[0];
           updatePromises.push(new Promise((resolve, reject) => {
-            tx.executeSql(
-              'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
-              ['local-only' , data.specificationInformation.new_rpie_id, rpie.id],
-              resolve,
-              reject
-            );
+
+            if (rpie.sync_status == 'duplicate-only') {
+              tx.executeSql(
+                'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
+                ['duplicate-only' , data.specificationInformation.new_rpie_id ? data.specificationInformation.new_rpie_id : data.specificationInformation.rpie_index_number, rpie.id],
+                resolve,
+                reject
+              );
+            }else{
+              tx.executeSql(
+                'UPDATE rpie_specifications SET sync_status = ?, rpie_id = ? WHERE id = ?',
+                ['local-only' , data.specificationInformation.new_rpie_id ? data.specificationInformation.new_rpie_id : data.specificationInformation.rpie_index_number, rpie.id],
+                resolve,
+                reject
+              );
+            }
           })); 
 
           updatePromises.push(new Promise((resolve, reject) => {
