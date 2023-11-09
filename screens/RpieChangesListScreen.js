@@ -32,7 +32,9 @@ const RpieChangesListScreen = () => {
   };
 
   const pushChangesToServer = async () => {
-  
+
+    setLoading(true);
+
     try {
       await db.transaction(async (tx) => {
         let results = [];
@@ -105,6 +107,8 @@ const RpieChangesListScreen = () => {
                 // Handle network error or other unexpected errors
                 console.error('Failed to send data to server:', error);
                 // You can display an error message or take other appropriate actions
+              } finally {
+                setLoading(false);
               }
             };
 
@@ -114,8 +118,6 @@ const RpieChangesListScreen = () => {
           (error) => console.error('Error fetching data from rpie_specifications:', error)
         );
       });
-
-      setLoading(false);
       // Load data from the database and update the UI
       await fetchDataFromDatabase();
     } catch (error) {
@@ -163,7 +165,6 @@ const RpieChangesListScreen = () => {
     });
   };
 
-
   useFocusEffect(
     React.useCallback(() => {
       // Fetch data from the WordPress REST API
@@ -176,7 +177,6 @@ const RpieChangesListScreen = () => {
   );
 
   useEffect(() => {
-
     createRpieSpecsTable();
     createRpieSpecsInfoTable();
     createDeletedRpieSpecsTable();
@@ -295,7 +295,6 @@ const RpieChangesListScreen = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

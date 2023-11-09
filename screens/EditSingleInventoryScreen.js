@@ -661,6 +661,11 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.Btnrow}>
             <View style={styles.buttonContainer}>
+              <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={() => CancelBtn(rpie)} >
+                Cancel
+              </Button>
+            </View>
+            <View style={styles.buttonContainer}>
               <Button textColor="#fff" mode="contained" style={styles.Btn} onPress={() => EditBtnDialog(rpie)} >
                 Update
               </Button>
