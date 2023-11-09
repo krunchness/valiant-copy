@@ -36,10 +36,8 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
                   [results.id],
                   (_, { rows }) => {
                     results.specificationInformation = rows.item(0);
-                    console.log('test');
                     setData(results);
                     setOldRpie(rows.item(0).new_rpie_id);
-                    console.log(oldRpie);
                   },
                   (error) => console.error('Error fetching data from rpie_specification_information:', error)
                 );
@@ -103,7 +101,6 @@ const EditSingleInventoryScreen = ({ route, navigation }) => {
 
   const EditBtnDialog = (rpie) => {
     // You can use the rpie object here if needed
-    console.log(rpie);
     setShowEditDialog(true);
   };
 
